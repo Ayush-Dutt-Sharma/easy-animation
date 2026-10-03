@@ -1,4 +1,4 @@
-# Motion Recipes: plan
+# Afterglow: plan
 
 A site where anyone can copy the code for glowing, minimal motion graphics (the Dan Koe short style).
 We take a reference video, break it into scenes, break each scene into small reusable animations ("recipes"),
@@ -53,7 +53,7 @@ const easeOutBack = (t: number) => …;
 - Every recipe repeats its small helpers (easing, glow filter) in its own file. That duplication is the price of
   copy-paste, and it is fine.
 
-**Later, when people ask:** offer a Remotion version of each recipe (for people making videos in React) and a
+**Decided: plain TS/SVG only for v1.** Later, when people ask, offer a Remotion version of each recipe (for people making videos in React) and a
 "copy as AI prompt" button. Remotion's `useCurrentFrame()` is already a pure function of time, so a port is
 mechanical.
 
@@ -100,8 +100,7 @@ Use the same stack as showTheCode, so nothing new needs learning:
 
 ## Open questions
 
-- Name and domain: "Motion Recipes" is a placeholder.
-- Copy targets for v1: plain TS/SVG only (recommended), or Remotion from day one?
+- Domain for "Afterglow" (not checked yet; fallbacks: Glowkit, Orbit Kit). The folder is still `motionRecipes`.
 - Which Dan Koe short should be the first breakdown? (Send the video file, as with showTheCode.)
 - Should recipes also come in light-on-white, or stay black-stage only?
 
