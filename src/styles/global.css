@@ -64,3 +64,4 @@ pre.astro-code code { background: none; border: 0; padding: 0; font-size: inheri
 .site-footer p { margin: 0; }
 .site-footer a { color: var(--text); }
 .love { color: #fff; text-shadow: 0 0 10px #fff; }
+.thanks { flex-basis: 100%; text-align: center; padding-top: 16px; }
