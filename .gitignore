@@ -1,0 +1,6 @@
+node_modules/
+renders/
+snapshots/
+.env
+reference/*.mp4
+reference/*.png

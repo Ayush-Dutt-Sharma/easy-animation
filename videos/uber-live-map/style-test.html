@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="en" data-resolution="portrait" data-composition-variables='[{"id":"theme","type":"string","label":"Theme","default":"paper-pencil"}]'>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1080, height=1920">
+<title>Style test</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@700&family=Permanent+Marker&display=block">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/roughjs@4.6.6/bundled/rough.js"></script>
+<script src="engine/themes.js"></script>
+<script src="engine/kit.js"></script>
+<style>*{margin:0;padding:0;box-sizing:border-box} html,body{width:1080px;height:1920px;overflow:hidden} canvas{display:block}</style>
+</head>
+<body>
+<div id="root" data-composition-id="main" data-start="0" data-duration="5" data-width="1080" data-height="1920">
+  <div id="stage" class="clip" data-start="0" data-duration="5" data-track-index="0"><canvas id="cv" width="1080" height="1920"></canvas></div>
+</div>
+<script>
+// Phase 1 style test: Sam taps Confirm, the cars around ping, a cab pulls up (videos/uber-live-map/brief.md).
+// One canvas, redrawn by draw(t) on every hf-seek. The theme variable swaps the look; the scene only uses tokens.
+// World coords are the 1080x1920 frame at camera zoom 1. Set: library/sets/city-street.md.
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+const { poly, ell, path, line, shadow, glow, mix, at, rng } = K;
+
+const clamp = x => Math.min(1, Math.max(0, x)), ramp = (t, a, b) => clamp((t - a) / (b - a)), lerp = (a, b, k) => a + (b - a) * k;
+const outCubic = x => 1 - (1 - x) ** 3, outBack = x => 1 + 2.70158 * (x - 1) ** 3 + 1.70158 * (x - 1) ** 2;
+const twos = t => Math.floor(t * 15 + 1e-6) / 15; // characters animate on twos
+const capsule = (ax, ay, bx, by, r) => { const a = Math.atan2(by - ay, bx - ax), nx = -Math.sin(a) * r, ny = Math.cos(a) * r; return `M ${ax + nx} ${ay + ny} L ${bx + nx} ${by + ny} A ${r} ${r} 0 0 0 ${bx - nx} ${by - ny} L ${ax - nx} ${ay - ny} A ${r} ${r} 0 0 0 ${ax + nx} ${ay + ny} Z`; };
+const rrect = (x0, y0, x1, y1, r) => `M ${x0 + r} ${y0} H ${x1 - r} Q ${x1} ${y0} ${x1} ${y0 + r} V ${y1 - r} Q ${x1} ${y1} ${x1 - r} ${y1} H ${x0 + r} Q ${x0} ${y1} ${x0} ${y1 - r} V ${y0 + r} Q ${x0} ${y0} ${x0 + r} ${y0} Z`;
+const rect = (x0, y0, x1, y1) => [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
+const blob = (cx, cy, w, h, s) => Array.from({ length: 32 }, (_, i) => { const a = i * Math.PI / 16, k = 1 + .08 * Math.sin(5 * a + s) + .05 * Math.sin(9 * a + 2 * s); return [cx + Math.cos(a) * w / 2 * k, cy + Math.sin(a) * h / 2 * k]; });
+const cloud = (w, h) => [[-w / 2, 0], ...Array.from({ length: 25 }, (_, i) => { const x = (i / 24 - .5) * w; return [x, -Math.max(0, ...[[-.28, .32, .6], [.02, .36, 1], [.3, .28, .7]].map(([c, r, k]) => { const d = (x - c * w) / (r * w); return d * d < 1 ? Math.sqrt(1 - d * d) * h * k : 0; }))]; }), [w / 2, 0]];
+const G = (x, y, f, r = 0, sx = 1, sy = sx) => { ctx.save(); ctx.translate(x, y); ctx.rotate(r); ctx.scale(sx, sy); f(); ctx.restore(); };
+
+function sky(t) {
+  at(1);
+  poly(rect(-120, -120, 1200, 1000), mix('--bluegrey', '--paper', .35), null, { flat: true, wash: true, bleed: .3 });
+  [[140, 190, 230, 70], [480, 120, 190, 60], [830, 70, 210, 64]].forEach(([x, y, w, h], i) => { at(10 + i); G(x + 8 * t, y, () => poly(cloud(w, h), '--white', 'far', { flat: true })); });
+  at(20); // skyline, with the Art Deco spire at x 300
+  const c = mix('--slate', '--paper', .3);
+  [[-30, 90, 290], [90, 170, 215], [170, 240, 330], [340, 440, 250], [440, 520, 305], [520, 600, 215], [600, 700, 275], [870, 990, 75], [990, 1110, 110]]
+    .map(([a, b, top]) => rect(a, top, b, 900))
+    .concat([rect(252, 300, 348, 900), rect(266, 240, 334, 300), rect(280, 190, 320, 240), [[290, 190], [300, 120], [310, 190]]])
+    .forEach(p => poly(p, c, 'far', { flat: true }));
+}
+
+function buildings(t) {
+  at(100); // brownstones: facade, cornice, windows; door, stoop and zig-zag fire escape on the first two
+  [[-40, 150, 440, '--brown'], [150, 300, 410, mix('--brown', '--sand', .35)], [300, 440, 430, '--brown']].forEach(([a, b, top, c], i) => {
+    poly(rect(a, top, b, 962), c, 'bg');
+    poly(rect(a - 8, top - 24, b + 8, top), mix(c, '--ink', .3), 'bg');
+    for (let y = top + 50; y < (i < 2 ? 760 : 690); y += 110) for (const f of [.28, .72]) {
+      const x = a + (b - a) * f;
+      poly(rect(x - 24, y - 12, x + 24, y - 2), '--beige', 'bg', { flat: true });
+      poly(rect(x - 19, y, x + 19, y + 66), mix('--night', '--bluegrey', .45), 'bg', { flat: true });
+    }
+    if (i === 2) return;
+    const x = (a + b) / 2;
+    poly(rect(x - 20, 846, x + 20, 930), '--night', 'bg');
+    poly(rect(x - 38, 930, x + 38, 962), '--sand', 'bg');
+    line([[x - 38, 946], [x + 38, 946]], 'bg');
+    for (let y = top + 150, k = 0; y < 800; y += 110, k++) {
+      poly(rect(a + 14, y, b - 14, y + 7), '--ink', 'bg', { flat: true });
+      line([[a + 14, y], [a + 14, y - 26], [b - 14, y - 26], [b - 14, y]], 'bg');
+      if (y + 110 < 800) line(k % 2 ? [[b - 20, y], [a + 20, y + 110]] : [[a + 20, y], [b - 20, y + 110]], 'bg');
+    }
+  });
+  for (const [x, r] of [[55, 416], [215, 386]]) { // water towers
+    line([[x - 30, r - 44], [x - 34, r]], 'bg'); line([[x + 30, r - 44], [x + 34, r]], 'bg'); line([[x - 32, r - 22], [x + 32, r - 22]], 'bg');
+    poly([[x - 36, r - 44], [x - 40, r - 132], [x + 40, r - 132], [x + 36, r - 44]], '--brown', 'bg');
+    line([[x - 38, r - 72], [x + 38, r - 72]], 'bg'); line([[x - 39, r - 104], [x + 39, r - 104]], 'bg');
+    poly([[x - 48, r - 128], [x, r - 180], [x + 48, r - 128]], mix('--brown', '--ink', .3), 'bg');
+  }
+  poly(rect(312, 846, 428, 962), mix('--bluegrey', '--paper', .3), 'bg'); // deli
+  line([[370, 846], [370, 962]], 'bg');
+  for (let i = 0; i < 6; i++) { const x = 294 + 25 * i; poly([[x + 6, 792], [x + 31, 792], [x + 25, 838], [x, 838]], i % 2 ? '--paper' : '--sage', 'bg'); }
+  poly(rect(320, 734, 420, 780), '--note', 'bg');
+  K.text('DELI', 370, 770, 38, '--ink');
+
+  at(250); // cross street, receding to (560, 762) on the horizon
+  poly([[440, 404], [520, 640], [520, 828], [440, 962]], mix('--brown', '--ink', .25), 'bg', { shade: true });
+  poly([[520, 828], [560, 764], [600, 822], [690, 962], [440, 962]], mix('--dusk', '--paper', .4), 'bg');
+
+  at(300); // glass tower with a revolving door
+  const glass = mix('--slate', '--bluegrey', .35);
+  poly([[690, 150], [600, 572], [600, 822], [690, 962]], mix(glass, '--paper', .3), 'bg');
+  poly(rect(690, 150, 1120, 962), glass, 'bg');
+  poly(rect(682, 150, 1120, 178), '--dusk', 'bg');
+  for (let x = 750; x < 1120; x += 70) line([[x, 178], [x, 790]], 'bg', { w: 2 });
+  for (let y = 250; y < 790; y += 80) line([[690, y], [1120, y]], 'bg', { w: 2 });
+  ctx.globalAlpha = .35;
+  for (const [x, y] of [[720, 330], [860, 520], [960, 260]]) poly([[x, y + 60], [x + 50, y], [x + 64, y], [x + 14, y + 60]], '--white', null, { flat: true });
+  ctx.globalAlpha = 1;
+  poly(rect(682, 790, 1120, 812), '--night', 'bg');
+  poly(rect(690, 812, 1120, 962), mix('--bluegrey', '--paper', .35), 'bg');
+  for (let x = 700; x < 1120; x += 96) line([[x, 812], [x, 962]], 'bg', { w: 2 });
+  poly(rect(752, 844, 868, 962), mix('--bluegrey', '--paper', .15), 'bg');
+  ell(810, 844, 124, 24, '--night', 'bg');
+  at(390);
+  const th = 2 * Math.PI * .15 * t;
+  for (let k = 0; k < 4; k++) if (Math.cos(th + k * Math.PI / 2) > 0) { const x = 810 + 56 * Math.sin(th + k * Math.PI / 2); line([[x, 856], [x, 960]], 'bg'); }
+}
+
+function street() {
+  at(450);
+  poly(rect(-120, 1016, 1200, 1336), mix('--dusk', '--paper', .4), 'bg', { bleed: .06 });
+  for (let x = 240; x < 1200; x += 150) poly(rect(x, 1168, x + 72, 1178), '--paper', null, { flat: true });
+  for (let y = 1034; y < 1320; y += 42) poly(rect(20, y, 176, y + 22), '--paper', null, { flat: true }); // crosswalk
+  ell(850, 1290, 118, 26, mix(mix('--dusk', '--paper', .4), '--ink', .3), 'bg'); // manhole
+  poly(rect(-120, 960, 1200, 1012), '--beige', 'bg', { bleed: .05 });
+  poly(rect(-120, 1008, 1200, 1020), '--slate', 'bg', { flat: true, bleed: .03 });
+  poly(rect(-120, 1330, 1200, 1350), '--slate', 'mid', { flat: true });
+  poly(rect(-120, 1348, 1200, 2040), '--sand', 'mid');
+  for (const p of [[[-120, 1560], [1200, 1540]], [[330, 1350], [250, 2040]], [[860, 1350], [960, 2040]]]) line(p, 'mid', { w: 2 });
+}
+
+function tree(t) {
+  at(400);
+  G(950, 992, () => {
+    path(capsule(0, 0, -6, -210, 14), '--brown', 'bg');
+    line([[-4, -150], [-50, -230]], 'bg'); line([[-2, -170], [40, -250]], 'bg');
+    poly(blob(0, -320, 300, 250, 1), '--olive', 'bg');
+  }, .035 * Math.sin(2 * Math.PI * .25 * t));
+}
+
+function cart(t) { // hot-dog cart; the umbrella rim flutters
+  at(500);
+  G(420, 984, () => {
+    shadow([[-75, -2], [80, -2], [110, 10], [-45, 10]]);
+    ctx.scale(.62, .62);
+    poly(rect(-110, -200, 110, -46), '--white', 'bg');
+    poly(rect(-110, -160, 110, -128), '--alert', 'bg', { flat: true });
+    poly(rect(-122, -214, 122, -200), '--slate', 'bg');
+    ell(-62, -30, 58, 58, '--ink', 'bg'); ell(62, -30, 58, 58, '--ink', 'bg');
+    line([[0, -214], [0, -420]], 'bg');
+    const rim = [-160, -80, 0, 80, 160].map((x, i) => [x, -410 + 3 * Math.sin(2 * Math.PI * 1.2 * t + i) / .62]);
+    for (let i = 0; i < 4; i++) path(`M 0 -500 L ${rim[i]} L ${rim[i + 1]} Z`, i % 2 ? '--paper' : '--alert', 'bg');
+  });
+}
+
+function person(p, t) { // side-view pedestrian, feet at (x, y)
+  const tc = twos(t), c = p.cls || 'bg', skin = p.dark ? mix('--skin', '--brown', .45) : '--skin';
+  const sw = p.walk ? Math.sin(2 * Math.PI * 1.6 * tc + p.ph) : 0;
+  const bob = p.walk ? -10 * (1 - Math.abs(sw)) : -4 * (.5 - .5 * Math.cos(2 * Math.PI * tc / 3 + p.ph));
+  G(p.x, p.y, () => {
+    shadow([[-64, -3], [80, -3], [128, 13], [-16, 13]].map(([a, b]) => [a * p.s, b * p.s]));
+    ctx.scale(p.dir * p.s, p.s);
+    for (const k of [1, -1]) path(capsule(0, -350 + bob, 60 * sw * k, -34, 26), p.bottom, c);
+    for (const k of [1, -1]) G(60 * sw * k + 14, -18, () => ell(0, 0, 64, 32, '--ink', c));
+    G(0, bob, () => {
+      path(capsule(0, -600, 70 * sw, -390, 19), p.top, c);
+      path(rrect(-64, -670, 64, -330, 30), p.top, c);
+      if (p.coffee) { path(capsule(0, -600, 60, -500, 19), p.top, c); poly([[48, -560], [84, -560], [80, -500], [52, -500]], '--white', c); }
+      else path(capsule(0, -600, -70 * sw, -390, 19), p.top, c);
+      if (p.tote) poly([[-30, -560], [-80, -420], [20, -420]], '--beige', c);
+      ell(10, -738, 126, 136, skin, c);
+      path('M -54 -742 Q -60 -818 8 -820 Q 70 -818 72 -762 Q 36 -790 -12 -784 Q -34 -770 -54 -742 Z', p.hair, c);
+      ell(42, -738, 12, 12, '--ink', null, { flat: true });
+      line([[30, -700], [50, -702]], c);
+    });
+  });
+}
+
+function crowd(t) { // far sidewalk, drawn back to front
+  [
+    { x: 150 + 45 * t, y: 1004, s: .16, dir: 1, top: '--sage', bottom: '--navy', hair: '--hair', walk: true, ph: 0 },
+    { x: 900 - 40 * t, y: 998, s: .155, dir: -1, top: '--terracotta-light', bottom: '--dusk', hair: '--night', dark: true, walk: true, ph: 1.3 },
+    { x: 250, y: 1002, s: .165, dir: -1, top: '--olive', bottom: '--navy', hair: '--night', coffee: true, ph: .5 },
+    { x: 700 + 32 * t, y: 990, s: .145, dir: 1, top: '--slate', bottom: '--dusk', hair: '--hair', dark: true, walk: true, tote: true, ph: 2.1 },
+  ].map((p, i) => ({ ...p, n: 600 + 30 * i })).sort((a, b) => a.y - b.y).forEach(p => { at(p.n); person(p, t); });
+}
+
+function car(x, gy, s, dir, body, o = {}) { // side view, wheels on y = gy; the body bobs, the wheels don't
+  const c = o.cls || 'mid', win = mix('--bluegrey', '--white', .2);
+  G(x, gy, () => {
+    shadow([[-170 * s, 2], [200 * s, 2], [250 * s, 22 * s], [-110 * s, 22 * s]]);
+    ctx.rotate(o.pitch || 0); ctx.scale(dir * s, s);
+    G(0, o.bob || 0, () => {
+      path('M -116 -102 L -84 -164 Q -78 -174 -64 -174 L 60 -174 Q 74 -174 82 -164 L 124 -102 Z', body, c);
+      path('M -190 -40 Q -196 -96 -156 -102 L 152 -104 Q 192 -98 194 -66 L 194 -44 Q 192 -30 176 -30 L -176 -30 Q -190 -30 -190 -40 Z', body, c);
+      poly([[-100, -108], [-74, -160], [-14, -160], [-14, -108]], win, c, { flat: true });
+      poly([[2, -108], [2, -160], [60, -160], [104, -108]], win, c, { flat: true });
+      if (o.cab) {
+        poly([[-188, -74], [192, -74], [193, -64], [-189, -64]], '--ink', null, { flat: true });
+        path(rrect(-26, -196, 26, -174, 6), '--white', c);
+        ell(40, -130, 30, 34, '--skin', c);
+      }
+      line([[-8, -100], [-8, -36]], c); line([[20, -80], [40, -80]], c);
+      ell(184, -76, 14, 20, '--note', c, { flat: true }); ell(-186, -76, 10, 18, '--alert', c, { flat: true });
+    });
+    for (const wx of [-118, 122]) { ell(wx, -31, 62, 62, '--ink', c, { flat: true }); ell(wx, -31, 26, 26, '--slate', c, { flat: true }); }
+  });
+}
+
+function pings(x, y, s, times, t, n) { // GPS ping: three rings 0.2 s apart plus a roof glow
+  times.forEach((t0, j) => {
+    for (let k = 0; k < 3; k++) {
+      const u = (t - t0 - .2 * k) / .9;
+      if (u < 0 || u > 1) continue;
+      at(n + 3 * j + k);
+      const r = (8 + 112 * outCubic(u)) * s / 1.2;
+      ctx.globalAlpha = 1 - u;
+      ell(x, y, 2 * r, 2 * r, null, 'fine', { stroke: '--ping' });
+      ctx.globalAlpha = 1;
+    }
+    const g = (t - t0) / .6;
+    if (g >= 0 && g < 1) glow(x, y, 80 * s, '--ping-glow', 1 - g);
+  });
+}
+
+function traffic(t) {
+  const A = 900 - 160 * t, B = 1500 - 210 * t, S = 560 + 200 * t, u = clamp((t - 1) / 2.6);
+  const cab = t < 1 ? -230 - 485 * (1 - t) : 400 - 630 * (1 - u) ** 2; // eases to a stop at x 400 by t 3.6
+  at(800); car(A, 1150, .8, -1, '--terracotta-light', { cls: 'bg', bob: 1.2 * Math.sin(17 * t) });
+  at(840); car(B, 1150, .8, -1, '--sage', { cls: 'bg', bob: 1.3 * Math.sin(18 * t + 1) });
+  pings(A, 1000, .8, [.35, 4.35], t, 1000);
+  pings(B, 1000, .8, [2.6], t, 1010);
+  at(900); car(S, 1305, 1.2, 1, '--slate', { bob: 1.5 * Math.sin(19 * t + 2) });
+  pings(S, 1085, 1.2, [1], t, 1020);
+  at(940); car(cab, 1305, 1.2, 1, '--cab', { cab: true, cls: 'fg', pitch: .03 * Math.sin(Math.PI * ramp(t, 3.45, 3.95)), bob: t < 3.6 ? 1.4 * Math.sin(17 * t + 3) : 0 });
+  pings(cab, 1053, 1.2, [2.2, 3.65], t, 1030);
+}
+
+function steam(t) { // a puff from the manhole every 1.6 s
+  for (let k = 0; k < 4; k++) {
+    const b = -.8 + 1.6 * k, u = (t - b) / 1.2;
+    if (u < 0 || u > 1) continue;
+    at(1060 + k);
+    ctx.globalAlpha = .8 * (1 - u);
+    G(850 + 30 * u, 1285 - 230 * u, () => poly(blob(0, 0, 90, 70, b), '--white', 'mid', { flat: true }), 0, .5 + u);
+    ctx.globalAlpha = 1;
+  }
+}
+
+function pigeon(t) { // pecks on the curb, then flutters off up-left as the cab comes in
+  at(1080);
+  const f = ramp(t, 1.9, 3.3), fly = t >= 1.9, peck = !fly && twos(t) % .9 < .2;
+  const [hx, hy] = peck ? [-24, -8] : [-20, -30], wing = mix('--slate', '--night', .2);
+  G(470 - 560 * f ** 1.5, 1338 - 480 * (1 - (1 - f) ** 2), () => {
+    if (!fly) { line([[-4, -4], [-2, 0]], 'fine', { w: 2 }); line([[6, -4], [8, 0]], 'fine', { w: 2 }); }
+    poly([[16, -20], [38, -28], [34, -12]], '--slate', 'fine');
+    ell(0, -16, 44, 26, '--slate', 'fine');
+    ell(hx, hy, 18, 18, mix('--slate', '--night', .35), 'fine');
+    poly([[hx - 8, hy - 2], [hx - 16, hy + 1], [hx - 8, hy + 4]], '--gold', null, { flat: true });
+    ell(hx - 3, hy - 3, 4, 4, '--ink', null, { flat: true });
+    if (!fly) poly([[-10, -24], [14, -20], [16, -10]], wing, 'fine', { flat: true });
+    else poly(Math.floor(t * 15) % 2 ? [[-6, -22], [8, -22], [14, -56]] : [[-6, -18], [8, -18], [16, 8]], wing, 'fine');
+  });
+}
+
+function furniture() { // traffic light and lamp stand at the curb, behind Sam, so they don't shrink next to Sam
+  at(1100);
+  G(0, -150, () => {
+  shadow([[112, 1516], [128, 1516], [262, 1600], [244, 1606]]); // traffic light, green
+  path(capsule(120, 1520, 120, 690, 10), '--night', 'mid');
+  path(rrect(90, 540, 150, 690, 10), '--night', 'mid');
+  ell(120, 568, 34, 34, mix('--alert', '--night', .6), 'mid', { flat: true });
+  ell(120, 615, 34, 34, mix('--gold', '--night', .6), 'mid', { flat: true });
+  ell(120, 662, 34, 34, '--go', 'mid', { flat: true });
+  glow(120, 662, 70, '--go', .8);
+  path(rrect(132, 860, 184, 912, 6), '--night', 'mid'); // WALK box
+  ell(158, 872, 9, 9, '--white', null, { flat: true });
+  for (const p of [[[158, 877], [158, 893], [151, 905]], [[158, 893], [165, 905]], [[151, 884], [165, 884]]]) line(p, 'fine', { w: 2.5, c: '--white' });
+  shadow([[1022, 1498], [1038, 1498], [1180, 1580], [1162, 1586]]); // street lamp
+  path(capsule(1030, 1500, 1030, 470, 11), '--night', 'mid');
+  path('M 1030 470 Q 1030 430 990 432 L 960 434', null, 'mid');
+  poly([[930, 432], [990, 432], [980, 460], [940, 460]], '--night', 'mid');
+  });
+}
+
+function sam(t) { // 3/4 view facing left, feet at (640, 1470)
+  const tc = twos(t), br = .5 - .5 * Math.cos(2 * Math.PI * tc / 3.2), up = -3.6 * br, ws = 6 * (.5 - .5 * Math.cos(2 * Math.PI * tc / 3.5));
+  const down = outCubic(ramp(tc, .1, .23)) - .6 * outCubic(ramp(tc, 3.6, 3.73)), gaze = ramp(tc, 3.6, 3.73); // looks up as the cab arrives
+  const R = rng(77); let blink = false;
+  for (let b = 1.3 + 1.2 * R(); b < 5; b += 2.4 + 1.6 * R()) blink ||= tc >= b && tc < b + .1;
+  const lift = outCubic(ramp(t, .33, .46)), press = ramp(t, .47, .57), rel = ramp(t, .57, .63), sq = press * (1 - rel);
+  const ok = t >= .57, flash = ok ? clamp(1 - (t - .57) / .6) : 0;
+  const tx = lerp(lerp(lerp(10, 18, lift), 2, press), 10, rel), ty = lerp(lerp(lerp(20, 8, lift), 34, press), 20, rel);
+  at(1200);
+  G(640, 1470, () => {
+    shadow([[-84, -4], [52, -8], [250, 56], [214, 84], [40, 64], [-70, 18]]);
+    poly([[-52 + ws, -372], [2 + ws, -372], [-8, -28], [-44, -28]], '--navy', 'fg');
+    path('M -4 -30 L -4 -6 Q -4 0 -10 0 L -70 0 Q -84 0 -80 -12 Q -74 -28 -48 -30 Z', '--brown', 'fg');
+    poly([[-2 + ws, -372], [54 + ws, -372], [44, -28], [6, -28]], '--navy', 'fg');
+    path('M 48 -30 L 48 -6 Q 48 0 42 0 L -14 0 Q -28 0 -24 -12 Q -18 -28 8 -30 Z', '--brown', 'fg');
+    G(ws, 0, () => {
+      path(capsule(-74, -606 + up, -104, -396 + up, 22), '--terracotta', 'fg');
+      ell(-106, -378 + up, 30, 36, '--skin', 'fg');
+      poly(rect(-22, -700 + up, 16, -630 + up), '--skin', 'fg');
+      poly(rect(-22, -668 + up, 16, -652 + up), mix('--skin', '--ink', .2), null, { flat: true });
+      G(0, -350, () => { // torso breathes about the hips
+        ctx.translate(0, 350);
+        path('M -84 -612 Q -98 -540 -90 -460 L -84 -350 L 84 -350 L 90 -470 Q 98 -560 80 -618 Q 46 -648 -2 -650 Q -50 -646 -84 -612 Z', '--terracotta', 'fg');
+        poly([[48, -626], [78, -610], [86, -470], [80, -356], [54, -356], [58, -470]], mix('--terracotta', '--ink', .18), null, { shade: true });
+        line([[-86, -374], [86, -374]], 'fine');
+        path('M -26 -646 Q -4 -628 20 -646', null, 'fine');
+      }, 0, 1, 1 + .012 * br);
+      G(-2, -684 + up, () => { // head tilts down to the phone
+        ctx.translate(2, 684);
+        path('M 50 -760 Q 56 -702 20 -676 Q -8 -660 -40 -670 Q -72 -682 -78 -722 Q -82 -764 -64 -794 Q -38 -824 4 -822 Q 46 -816 50 -760 Z', '--skin', 'fg');
+        ctx.globalAlpha = .4; ell(-12, -712, 30, 20, '--cheek', null, { flat: true }); ell(-66, -714, 14, 16, '--cheek', null, { flat: true }); ctx.globalAlpha = 1;
+        path('M 62 -706 Q 72 -760 60 -800 Q 40 -842 -10 -840 Q -62 -836 -84 -800 Q -94 -778 -86 -756 Q -70 -778 -40 -790 Q 0 -796 30 -782 Q 46 -770 50 -752 Q 58 -734 56 -714 Z', '--hair', 'fg');
+        path('M 40 -754 Q 64 -756 62 -734 Q 60 -712 40 -716', '--skin', 'fg');
+        path('M 46 -744 Q 56 -738 48 -726', null, 'fine');
+        const ey = 3 * down, ex = -3 * gaze;
+        for (const x of [-55, -16]) {
+          if (blink) line([[x - 7 + ex, -742 + ey], [x + ex, -738 + ey], [x + 7 + ex, -742 + ey]], 'fine', { smooth: true });
+          else { ell(x + ex, -742 + ey, 14, 14, '--ink', null, { flat: true }); ell(x + ex + 2, -745 + ey, 4, 4, '--white', null, { flat: true }); }
+        }
+        at(1240);
+        line([[-68, -761 + ey], [-50, -764 + ey]], 'fine', { w: 6 }); line([[-26, -764 + ey], [-6, -761 + ey]], 'fine', { w: 6 });
+        path('M -70 -736 Q -84 -724 -70 -718', null, 'fine');
+        path(`M -54 -702 Q -40 ${-695 + 8 * ramp(tc, 3.7, 3.83)} -24 -701`, null, 'fine');
+      }, -.14 * down);
+      glow(-34, -680 + up, 80, '--ping-glow', .25 + .25 * ramp(t, .57, .8) + .5 * flash);
+      at(1250); // near arm and phone
+      path(capsule(64, -612 + up, 84, -470 + up, 27), '--terracotta', 'fg');
+      path(capsule(84, -470 + up, -6, -514 + up, 23), '--terracotta', 'fg');
+      G(-62, -560 + up, () => {
+        ell(42, 46, 46, 56, '--skin', 'fg');
+        path(rrect(-38, -66, 38, 66, 12), '--screen', 'fg');
+        path(rrect(-32, -58, 32, 58, 7), '--screen-ui', null, { flat: true });
+        poly(rect(-28, -54, 28, 8), mix('--bluegrey', '--screen-ui', .3), null, { flat: true });
+        for (const p of [[[-28, -20], [28, -30]], [[-10, -54], [4, 8]], [[-28, 2], [28, -8]]]) line(p, 'fine', { w: 3, c: '--white' });
+        line([[-20, 0], [-8, -24], [14, -40]], 'fine', { w: 3, c: '--ping' });
+        ell(14, -40, 9, 9, '--ink', null, { flat: true });
+        if (ok) { const u = ramp(t, .8, 3.6); ell(lerp(-20, 12, u), lerp(0, -38, u), 8, 8, '--cab', null, { flat: true }); }
+        G(0, 36, () => { // Confirm button squashes 12% on the press
+          path(rrect(-25, -9, 25, 9, 9), ok ? '--go' : '--ink', null, { flat: true });
+          line(ok ? [[-7, 0], [-2, 5], [8, -5]] : [[-12, 0], [12, 0]], 'fine', { w: 3, c: '--white' });
+        }, 0, 1 + .06 * sq, 1 - .12 * sq);
+        for (let i = 0; i < 3; i++) path(capsule(-40, -20 + 18 * i, -30, -16 + 18 * i, 9), '--skin', 'fg');
+        path(capsule(46, 44, tx, ty, 9), '--skin', 'fg');
+      }, -.12);
+      glow(-62, -560 + up, 130, '--ping-glow', .35 + .6 * flash);
+    });
+  });
+}
+
+const SUBS = [['Sam taps Confirm,', 0], ['and a little car', 1.25], ['glides their way.', 2.2]], LEAD = 2 / 30;
+function subtitle(t) { // a chunk lands 2 frames before its word and pops 92% -> 100%; the last one clears at 4.05 s
+  const i = SUBS.findLastIndex(([, s]) => t >= s - LEAD);
+  if (i < 0 || t >= 4.05) return;
+  const s = SUBS[i][1];
+  K.sub(SUBS[i][0], s ? .92 + .08 * outBack(ramp(t, s - LEAD, s + LEAD)) : 1);
+}
+
+function draw(t) {
+  const T = THEMES[window.__hyperframes?.getVariables?.()?.theme] || THEMES['paper-pencil'];
+  const e = (1 - Math.cos(Math.PI * clamp(t / 5))) / 2; // slow push-in over the whole shot
+  K.begin(cv, T, t, [1 + .06 * e, 540 + 20 * e, 960 - 60 * e]);
+  sky(t); buildings(t); street(); tree(t); cart(t); crowd(t); traffic(t); steam(t); pigeon(t);
+  furniture(); sam(t);
+  K.finish();
+  subtitle(t);
+}
+
+const ready = new Promise(r => document.readyState === 'complete' ? r() : addEventListener('load', r, { once: true }))
+  .then(() => Promise.all([document.fonts.load('700 76px Fredoka'), document.fonts.load('400 40px "Permanent Marker"')]));
+// Snap to the 30 fps grid: a worker's first seek can land a hair off it, which nudges fast movers by a fraction of a pixel.
+addEventListener('hf-seek', e => { const t = Math.round(e.detail.time * 30) / 30, p = ready.then(() => draw(t)); e.detail.waitUntil?.(p); });
+ready.then(() => draw(0));
+const tl = gsap.timeline({ paused: true });
+tl.set({}, {}, 5); // gives the timeline its 5 s length
+window.__timelines = window.__timelines || {};
+window.__timelines.main = tl;
+</script>
+</body>
+</html>
