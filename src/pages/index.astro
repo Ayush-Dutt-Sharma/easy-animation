@@ -8,15 +8,15 @@ const tags = [...new Set(recipes.flatMap((recipe) => recipe.tags))].sort();
 
 <Base description="Copy-paste code for glowing, minimal motion graphics, each one taken from a real short.">
   <section class="hero">
-    <p class="eyebrow">{recipes.length} recipes · TypeScript · no dependencies</p>
-    <h1>Glowing motion graphics.<br />Copy the code.</h1>
+    <div class="orb" aria-hidden="true"><i></i></div>
+    <h1>Motion graphics for everyone.</h1>
     <p class="lead">
-      Each recipe is one small animation in one file. Every frame is worked out from the time alone, so you can loop it,
-      scrub it or render it to video.
+      <span>Each recipe is one small animation in one file.</span>
+      <span>Every frame is worked out from the time alone, so you can loop it, scrub it or render it to video.</span>
       {/* Breakdowns show how the recipes make a real short. */}
     </p>
     <div class="cta">
-      <a class="button primary" href="#recipes">Browse recipes</a>
+      <a class="button primary" href="#recipes" target="_self">Browse recipes</a>
       {/* <a class="button" href="#breakdowns">See a breakdown</a> */}
     </div>
   </section>
@@ -84,8 +84,27 @@ const tags = [...new Set(recipes.flatMap((recipe) => recipe.tags))].sort();
 </script>
 
 <style>
-  .hero { padding: 72px 0 8px; }
-  .cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+  .hero { position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 88px 0 32px; }
+  /* A soft wash of light behind the heading, and the orb every recipe starts from */
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0 -16px;
+    z-index: -1;
+    background: radial-gradient(ellipse 50% 60% at 50% 30%, rgba(255, 255, 255, 0.07), transparent 70%);
+  }
+  /* The orb breathes while a small light circles it */
+  .orb { position: relative; display: grid; place-items: center; width: 76px; height: 76px; margin-bottom: 24px; }
+  .orb::before { content: ''; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 0 12px #fff, 0 0 40px #fff, 0 0 90px rgba(255, 255, 255, 0.6); animation: breathe 3s ease-in-out infinite alternate; }
+  .orb i { position: absolute; inset: 0; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 50%; animation: spin 6s linear infinite; }
+  .orb i::before { content: ''; position: absolute; top: -3px; left: calc(50% - 3px); width: 6px; height: 6px; border-radius: 50%; background: #fff; box-shadow: 0 0 8px #fff, 0 0 18px #fff; }
+  @keyframes breathe { from { transform: scale(0.8); opacity: 0.8; } to { transform: scale(1.15); opacity: 1; } }
+  @keyframes spin { to { transform: rotate(1turn); } }
+  @media (prefers-reduced-motion: reduce) { .orb::before, .orb i { animation: none; } }
+  .hero h1 { font-size: clamp(34px, 6.4vw, 64px); text-shadow: 0 0 36px rgba(255, 255, 255, 0.25); }
+  .hero .lead { max-width: none; text-wrap: balance; }
+  .hero .lead span { display: block; }
+  .cta { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 32px; }
 
   .tools { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 24px; }
   .tools input[type='search'],

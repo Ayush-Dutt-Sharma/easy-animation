@@ -17,6 +17,7 @@ const repo = 'https://github.com/Ayush-Dutt-Sharma/easy-animation';
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
+    <base target="_blank" /><!-- every link opens in a new tab; jumps within a page set target="_self" -->
     <title>{title ? `${title} · easy-animation` : 'easy-animation: copy-paste motion graphics'}</title>
     {
       /* Vercel Web Analytics: page views, countries, devices, referrers; no cookies. Vercel serves the script, so only in the build. */
@@ -33,7 +34,7 @@ const repo = 'https://github.com/Ayush-Dutt-Sharma/easy-animation';
       <div class="wrap">
         <a class="brand" href="/"><i aria-hidden="true"></i>easy-animation</a>
         <nav>
-          <a href="/#recipes">Recipes</a>
+          <a href="/#recipes" target="_self">Recipes</a>
           {/* Breakdowns hidden for now: <a href="/#breakdowns">Breakdowns</a> */}
           <a class="button" href={repo}>★ Star on GitHub</a>
         </nav>
@@ -42,12 +43,16 @@ const repo = 'https://github.com/Ayush-Dutt-Sharma/easy-animation';
     <main class="wrap"><slot /></main>
     <footer class="site-footer">
       <div class="wrap">
-        <p>Recipes are MIT licensed: copy them into anything, including paid work. <a href={repo}>Star it on GitHub</a>.</p>
-        <p>Made with <span class="love" aria-label="love">♥</span></p>
+        <a class="brand" href="/"><i aria-hidden="true"></i>easy-animation</a>
         <p class="thanks">
           Thank you, <a href="https://www.youtube.com/@DanKoeTalks/shorts">Dan Koe</a>: your shorts are the inspiration for
           this project.
         </p>
+        <p>
+          Recipes are MIT licensed: copy them into anything, including paid work. <span class="dot">·</span>
+          <a href={repo}>Star it on GitHub</a>
+        </p>
+        <p>Made with <span class="love" aria-label="love">♥</span></p>
       </div>
     </footer>
   </body>
