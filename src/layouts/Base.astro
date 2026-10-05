@@ -18,6 +18,15 @@ const repo = 'https://github.com/Ayush-Dutt-Sharma/easy-animation';
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
     <title>{title ? `${title} · easy-animation` : 'easy-animation: copy-paste motion graphics'}</title>
+    {
+      /* Vercel Web Analytics: page views, countries, devices, referrers; no cookies. Vercel serves the script, so only in the build. */
+      import.meta.env.PROD && (
+        <>
+          <script is:inline>window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };</script>
+          <script is:inline defer src="/_vercel/insights/script.js"></script>
+        </>
+      )
+    }
   </head>
   <body>
     <header class="site-header">

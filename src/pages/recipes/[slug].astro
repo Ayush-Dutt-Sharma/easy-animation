@@ -89,9 +89,14 @@ requestAnimationFrame(function frame(now) {
 </Base>
 
 <script>
+  // Counted in Vercel Analytics as custom events against this page, so the dashboard shows which recipes get taken.
+  const track = (name: string) => window.va?.('event', { name });
+  document.querySelector('[download]')?.addEventListener('click', () => track('Download'));
+
   const button = document.querySelector<HTMLButtonElement>('[data-copy]');
   const code = document.querySelector('.source pre') as HTMLPreElement; // the page always renders it
   button?.addEventListener('click', async () => {
+    track('Copy code');
     try {
       await navigator.clipboard.writeText(code.textContent ?? '');
       button.textContent = 'Copied ✓';
