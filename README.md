@@ -1,5 +1,7 @@
 # easy-animation
 
+<p align="center"><img src="media/style-test.gif" width="540" alt="The same 5-second street scene in two looks: paper-pencil on the left, watercolor-ink on the right"></p>
+
 Cartoon videos made from code. Claude Code writes the HTML and JavaScript that draws every frame, and [HyperFrames](https://github.com/heygen-com/hyperframes) renders it to MP4.
 
 ⭐ **If you like it, give it a star!**
