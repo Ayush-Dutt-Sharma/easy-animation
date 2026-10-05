@@ -56,6 +56,8 @@ const TAGS: Record<string, Tag[]> = {
   'hammer-strike': ['emphasis'],
   'dot-chomp': ['entrance', 'transition'],
   'speaker-waves': ['entrance', 'emphasis'],
+  'nail-drive': ['emphasis', 'transition'],
+  'phone-notifications': ['entrance', 'exit'],
 };
 
 const sources = import.meta.glob<string>('./recipes/*.ts', { query: '?raw', import: 'default', eager: true });
