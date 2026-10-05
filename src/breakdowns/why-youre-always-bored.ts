@@ -7,7 +7,7 @@ export const breakdown: Breakdown = {
   creator: 'Dan Koe',
   url: 'https://www.youtube.com/shorts/xybpfL1GnEQ',
   style:
-    'A 21-second 9:16 short. One white orb is the main character on a black stage, everything glows, and one small line of captions sits low in the frame, wiping on as each phrase is spoken (caption wipe).',
+    'A 21-second 9:16 short. One white orb is the main character on a black stage, everything glows, and one small line of captions sits low in the frame, wiping on as each phrase is spoken.',
   scenes: [
     {
       at: [0, 1.5],

@@ -1,4 +1,4 @@
-// Bead shuttle: the orb splits into two ends joined by a line, and a small bead runs back and forth between them.
+// Bead runs back and forth: the orb splits into two ends joined by a line, and a small bead runs back and forth between them.
 // Copy this file, it has no dependencies: `const render = mount(svg)`, then `render(seconds)` every frame.
 // render only sets attributes from t, so the same t always draws the same picture (scrub, loop, export).
 
@@ -10,13 +10,16 @@ const END = 44; // knob: end ball radius
 const BEAD = 18; // knob: bead radius
 const SPLIT = 0.8; // seconds the split takes; the bead starts running after it
 const LAP = 3.2; // knob: seconds for the bead to go right, back, left and back
+const END_SHAPE = '<circle r="50"/>'; // shape: each end, 100 across round 0 0
+const BEAD_SHAPE = '<circle r="50"/>'; // shape: the bead, 100 across round 0 0
 
 export function mount(svg: SVGSVGElement) {
   svg.setAttribute('viewBox', `0 0 ${SIZE} ${SIZE}`);
   const shine = glow(svg, 10);
   const line = add(svg, 'line', { y1: CENTRE, y2: CENTRE, stroke: '#fff', 'stroke-width': 4, filter: glow(svg, 4) });
-  const ends = [-1, 1].map(() => add(svg, 'circle', { cy: CENTRE, r: END, fill: '#fff', filter: shine }));
-  const bead = add(svg, 'circle', { cy: CENTRE, fill: '#fff', filter: shine });
+  const lit = () => add(svg, 'g', { fill: '#fff', color: '#fff', filter: shine }); // the glow sits outside the shape's scale
+  const ends = [-1, 1].map(() => shape(lit(), END_SHAPE));
+  const bead = shape(lit(), BEAD_SHAPE);
   const reach = SPAN - END - BEAD; // the bead stops where it touches an end
 
   return (t: number) => {
@@ -25,10 +28,10 @@ export function mount(svg: SVGSVGElement) {
     const x = reach * Math.sin((2 * Math.PI * Math.max(0, t - SPLIT)) / LAP);
     [-1, 1].forEach((side, i) => {
       const hit = clamp(((side * x) / reach - 0.85) / 0.15) ** 2; // the end the bead reaches gets nudged outward
-      set(ends[i], { cx: CENTRE + side * (SPAN * split + 14 * hit) });
+      set(ends[i], { transform: `translate(${CENTRE + side * (SPAN * split + 14 * hit)} ${CENTRE}) scale(${END / 50})` });
     });
     set(line, { x1: CENTRE - SPAN * split, x2: CENTRE + SPAN * split });
-    set(bead, { cx: CENTRE + x, r: BEAD * clamp(split) });
+    set(bead, { transform: `translate(${CENTRE + x} ${CENTRE}) scale(${(BEAD * clamp(split)) / 50})` });
   };
 }
 
@@ -43,6 +46,18 @@ function add<K extends keyof SVGElementTagNameMap>(parent: Element, tag: K, attr
 function set<T extends Element>(node: T, attrs: Attrs) {
   for (const [name, value] of Object.entries(attrs)) node.setAttribute(name, String(value));
   return node;
+}
+
+/**
+ * `markup` in a new group, to move with `transform`: SVG drawn in `box` ([x, y, width, height]), or an <svg> file or
+ * <image href="…"> on its own, which is fitted into `box`. Shapes take the group's fill and stroke; `currentColor` its `color`.
+ */
+function shape(parent: Element, markup: string, attrs: Attrs = {}, box = [-50, -50, 100, 100]) {
+  const group = add(parent, 'g', attrs);
+  group.innerHTML = markup;
+  const file = group.firstElementChild;
+  if (file && ['svg', 'image'].includes(file.tagName)) set(file, { x: box[0], y: box[1], width: box[2], height: box[3] });
+  return group;
 }
 
 /** The glow: a wide blur, a tight blur and the shape itself, stacked. Returns the value for a `filter` attribute. */

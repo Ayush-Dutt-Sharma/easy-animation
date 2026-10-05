@@ -1,4 +1,4 @@
-// Tower collapse: a stack of slabs comes apart from the bottom up, each one tumbling away, while the orb floats down.
+// Tower falls apart: a stack of slabs comes apart from the bottom up, each one tumbling away, while the orb floats down.
 // Copy this file, it has no dependencies: `const render = mount(svg)`, then `render(seconds)` every frame.
 // render only sets attributes from t, so the same t always draws the same picture (scrub, loop, export).
 
@@ -12,6 +12,7 @@ const START = 0.4; // knob: seconds of standing still before it goes
 const STAGGER = 0.08; // knob: seconds between one slab letting go and the next
 const GRAVITY = 2600; // knob: pixels per second², how hard they fall
 const BALL = 26;
+const BALL_SHAPE = '<circle r="50"/>'; // shape: what floats down, 100 across round 0 0
 
 export function mount(svg: SVGSVGElement) {
   svg.setAttribute('viewBox', `0 0 ${SIZE} ${SIZE}`);
@@ -28,7 +29,8 @@ export function mount(svg: SVGSVGElement) {
     return slab;
   });
   const top = BOTTOM - (SLABS - 1) * PITCH - D / 2;
-  const ball = add(svg, 'circle', { cx: SIZE / 2, r: BALL, fill: '#fff', filter: glow(svg) });
+  const lit = add(svg, 'g', { fill: '#fff', color: '#fff', filter: glow(svg) }); // the glow sits outside the shape's scale
+  const ball = shape(lit, BALL_SHAPE);
 
   return (t: number) => {
     slabs.forEach((slab, i) => {
@@ -41,7 +43,8 @@ export function mount(svg: SVGSVGElement) {
         opacity: 1 - clamp(drop / 500),
       });
     });
-    set(ball, { cy: top - 90 + 220 * easeInOutCubic(clamp((t - START - 0.5) / 1.6)) });
+    const y = top - 90 + 220 * easeInOutCubic(clamp((t - START - 0.5) / 1.6));
+    set(ball, { transform: `translate(${SIZE / 2} ${y}) scale(${BALL / 50})` });
   };
 }
 
@@ -62,6 +65,18 @@ function add<K extends keyof SVGElementTagNameMap>(parent: Element, tag: K, attr
 function set<T extends Element>(node: T, attrs: Attrs) {
   for (const [name, value] of Object.entries(attrs)) node.setAttribute(name, String(value));
   return node;
+}
+
+/**
+ * `markup` in a new group, to move with `transform`: SVG drawn in `box` ([x, y, width, height]), or an <svg> file or
+ * <image href="…"> on its own, which is fitted into `box`. Shapes take the group's fill and stroke; `currentColor` its `color`.
+ */
+function shape(parent: Element, markup: string, attrs: Attrs = {}, box = [-50, -50, 100, 100]) {
+  const group = add(parent, 'g', attrs);
+  group.innerHTML = markup;
+  const file = group.firstElementChild;
+  if (file && ['svg', 'image'].includes(file.tagName)) set(file, { x: box[0], y: box[1], width: box[2], height: box[3] });
+  return group;
 }
 
 /** The glow: a wide blur, a tight blur and the shape itself, stacked. Returns the value for a `filter` attribute. */

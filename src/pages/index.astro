@@ -1,32 +1,118 @@
 ---
 import RecipeCard from '../components/RecipeCard.astro';
 import Base from '../layouts/Base.astro';
-import { breakdowns, recipes } from '../catalog.ts';
+import { /* breakdowns, */ recipes } from '../catalog.ts'; // breakdowns are hidden for now
+
+const tags = [...new Set(recipes.flatMap((recipe) => recipe.tags))].sort();
 ---
 
 <Base description="Copy-paste code for glowing, minimal motion graphics, each one taken from a real short.">
-  <h1>Glowing motion graphics.<br />Copy the code.</h1>
-  <p class="lead">
-    Each recipe is one small animation in one TypeScript file with no dependencies. Every frame is worked out from the
-    time alone, so you can loop it, scrub it or render it to video. Breakdowns show how the recipes make a real short.
-  </p>
+  <section class="hero">
+    <p class="eyebrow">{recipes.length} recipes · TypeScript · no dependencies</p>
+    <h1>Glowing motion graphics.<br />Copy the code.</h1>
+    <p class="lead">
+      Each recipe is one small animation in one file. Every frame is worked out from the time alone, so you can loop it,
+      scrub it or render it to video.
+      {/* Breakdowns show how the recipes make a real short. */}
+    </p>
+    <div class="cta">
+      <a class="button primary" href="#recipes">Browse recipes</a>
+      {/* <a class="button" href="#breakdowns">See a breakdown</a> */}
+    </div>
+  </section>
 
-  <h2 id="recipes">Recipes</h2>
-  <div class="grid">{recipes.map((recipe) => <RecipeCard recipe={recipe} />)}</div>
+  <section class="section" id="recipes">
+    <div class="section-head"><h2>Recipes</h2><span class="count">{recipes.length} shown</span></div>
+    <form class="tools" role="search">
+      <input name="q" type="search" placeholder="Search recipes…" aria-label="Search recipes" />
+      <select name="sort" aria-label="Sort recipes">
+        <option value="new">Newest first</option>
+        <option value="old">Oldest first</option>
+        <option value="az">A to Z</option>
+      </select>
+      <fieldset class="tags" aria-label="Show one tag">
+        <label><input type="radio" name="tag" value="" checked />all</label>
+        {tags.map((tag) => <label><input type="radio" name="tag" value={tag} />{tag}</label>)}
+      </fieldset>
+    </form>
+    <div class="grid" id="gallery">{[...recipes].reverse().map((recipe) => <RecipeCard recipe={recipe} />)}</div>
+    <p class="empty" hidden>No recipe matches. Try another word or tag.</p>
+  </section>
 
-  <h2 id="breakdowns">Breakdowns</h2>
-  <ul class="breakdowns">
-    {
-      breakdowns.map((b) => (
-        <li>
-          <a href={`/breakdowns/${b.slug}/`}>{b.title}</a> <span>by {b.creator} · {b.scenes.length} scenes</span>
-        </li>
-      ))
-    }
-  </ul>
+  {/* Breakdowns hidden for now: put this section back to show them again.
+  <section class="section" id="breakdowns">
+    <div class="section-head"><h2>Breakdowns</h2><span>real shorts, scene by scene</span></div>
+    <div class="breakdowns">
+      {
+        breakdowns.map((b) => (
+          <a href={`/breakdowns/${b.slug}/`}>
+            <strong>{b.title}</strong>
+            <span>by {b.creator} · {b.scenes.length} scenes</span>
+            <i aria-hidden="true">→</i>
+          </a>
+        ))
+      }
+    </div>
+  </section>
+  */}
 </Base>
 
+<script>
+  // Search, tag and sort happen in the page: re-order every card, then hide the ones that don't match.
+  const form = document.querySelector<HTMLFormElement>('.tools')!;
+  const gallery = document.getElementById('gallery')!;
+  const empty = document.querySelector<HTMLElement>('.empty')!;
+  const count = document.querySelector<HTMLElement>('.count')!;
+  const newest = [...gallery.querySelectorAll<HTMLElement>('.card')]; // the server renders them newest first
+  const title = (card: HTMLElement) => card.querySelector('h3')!.textContent!;
+  const sorted = { new: newest, old: [...newest].reverse(), az: [...newest].sort((a, b) => title(a).localeCompare(title(b))) };
+
+  function update() {
+    const pick = new FormData(form);
+    const words = String(pick.get('q')).trim().toLowerCase();
+    const tag = String(pick.get('tag'));
+    const cards = sorted[pick.get('sort') as keyof typeof sorted];
+    for (const card of cards) card.hidden = !card.dataset.text!.includes(words) || (tag !== '' && !card.dataset.tags!.split(' ').includes(tag));
+    gallery.append(...cards);
+    const shown = cards.filter((card) => !card.hidden).length;
+    count.textContent = `${shown} shown`;
+    empty.hidden = shown > 0;
+  }
+  form.addEventListener('input', update);
+  form.addEventListener('submit', (event) => event.preventDefault()); // Enter in the search box would reload the page
+  addEventListener('pageshow', update); // coming Back, the browser puts the last search and sort back before this
+</script>
+
 <style>
-  .breakdowns { padding: 0; list-style: none; font-size: 17px; }
-  .breakdowns span { color: var(--muted); font-size: 14px; }
+  .hero { padding: 72px 0 8px; }
+  .cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+
+  .tools { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 24px; }
+  .tools input[type='search'],
+  .tools select {
+    font: 14px var(--sans);
+    color: var(--text);
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 8px 16px;
+  }
+  .tools input[type='search'] { flex: 1 1 240px; }
+  .tools input[type='search']:focus,
+  .tools select:focus { border-color: var(--line-strong); outline: none; }
+  .tags { display: flex; flex-wrap: wrap; gap: 8px; flex-basis: 100%; border: 0; padding: 0; margin: 0; }
+  .tags label { font: 13px var(--mono); color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px; cursor: pointer; transition: color 0.15s, border-color 0.15s; }
+  .tags label:hover { color: var(--text); border-color: var(--line-strong); }
+  .tags label:has(:checked) { color: #000; background: #fff; border-color: #fff; }
+  .tags label:has(:focus-visible) { outline: 2px solid #fff; outline-offset: 2px; }
+  .tags input { position: absolute; opacity: 0; pointer-events: none; }
+  .empty { color: var(--muted); text-align: center; padding: 48px 0; border: 1px dashed var(--line); border-radius: var(--radius); }
+
+  .breakdowns { display: grid; gap: 12px; }
+  .breakdowns a { display: grid; grid-template-columns: 1fr auto; gap: 2px 16px; align-items: center; text-decoration: none; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px 24px; transition: border-color 0.15s; }
+  .breakdowns a:hover { border-color: var(--line-strong); }
+  .breakdowns strong { font-size: 17px; }
+  .breakdowns span { color: var(--muted); font-size: 14px; grid-row: 2; }
+  .breakdowns i { font-style: normal; font-size: 20px; grid-row: 1 / 3; grid-column: 2; transition: transform 0.15s; }
+  .breakdowns a:hover i { transform: translateX(4px); }
 </style>

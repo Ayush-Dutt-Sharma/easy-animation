@@ -1,3 +1,4 @@
 import { defineConfig } from 'astro/config';
 
-export default defineConfig({ devToolbar: { enabled: false } });
+// 4400, so it runs next to other Astro sites on the default 4321.
+export default defineConfig({ server: { port: 4400 }, devToolbar: { enabled: false } });

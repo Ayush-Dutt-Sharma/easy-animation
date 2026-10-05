@@ -27,17 +27,22 @@ const { slug, title, controls = false } = Astro.props;
 </script>
 
 <style>
-  .preview svg { display: block; width: 100%; aspect-ratio: 1; background: #000; border-radius: 12px; }
-  .controls { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+  .preview svg { display: block; width: 100%; aspect-ratio: 1; background: #000; border-radius: var(--radius); }
+  .controls { display: flex; align-items: center; gap: 14px; padding: 12px 16px; border-top: 1px solid var(--line); }
   .play {
-    font: 600 14px var(--sans);
-    color: var(--text);
-    background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: 6px;
-    padding: 6px 14px;
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    font: 600 12px var(--sans);
+    color: #000;
+    background: #fff;
+    border: 0;
+    border-radius: 50%;
     cursor: pointer;
+    box-shadow: var(--glow);
   }
-  .seek { flex: 1; accent-color: #fff; }
-  .time { color: var(--muted); font: 13px var(--mono); font-variant-numeric: tabular-nums; min-width: 9em; text-align: right; }
+  .seek { flex: 1; min-width: 0; accent-color: #fff; cursor: pointer; }
+  .time { color: var(--muted); font: 12px var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
 </style>

@@ -1,4 +1,4 @@
-// Hammer strike: a glowing anvil and hammer flicker into view, the hammer winds up and slams down in a burst of light and dust, then both crumble away.
+// Hammer slams an anvil: a glowing anvil and hammer flicker into view, the hammer winds up and slams down in a burst of light and dust, then both crumble away.
 // Copy this file, it has no dependencies: `const render = mount(svg)`, then `render(seconds)` every frame.
 // render only sets attributes from t, so the same t always draws the same picture (scrub, loop, export).
 
@@ -53,23 +53,21 @@ const SWING: [number, number, (p: number) => number][] = [
 ];
 const HITS = SWING.filter(([, angle], i) => angle === 0 && i > 0 && SWING[i - 1][1] > 0).map(([at]) => at);
 
-// The anvil, horn to the left, measured from the middle of its top face. One outline plus a few detail lines.
-const ANVIL_PATH = [
+const ANVIL_SHAPE = `<path d="${[ // shape: the anvil, horn to the left, in the box -215 0 to 217 190, with the middle of its top face on 0 0
   'M-215 22L-210 18L-55 16L-50 2L213 0L217 35Q150 40 105 70Q90 85 90 110Q95 140 135 160L143 190H95',
   'C85 125 -5 125 -15 190H-65V165Q-30 150 -20 98C-40 75 -120 65 -215 22Z',
   'M-48 12H210M-62 162H138', // the face's edge and the ledge above the feet
   ...Array.from({ length: 9 }, (_, i) => `M${-190 + i * 15} 19v9`), // tick marks along the horn
-].join('');
-// The hammer, lying flat with its head to the left, measured from the end of its handle.
+].join('')}"/>`;
 const HANDLE = 255; // from the end of the handle to the middle of the head
 const FACE = 50; // how far the striking face sits below the handle's line
 const H = -HANDLE;
-const HAMMER_PATH = [
+const HAMMER_SHAPE = `<path d="${[ // shape: the hammer, lying flat with its head to the left, in the box -280 -45 to 2 50: it turns about 0 0, the end of its handle, and strikes with the bottom of its head
   `M${H + 22} -8L-12 -6Q2 -6 2 0Q2 6 -12 6L${H + 22} 8`, // the handle, rounded at the end
   `M${H - 22} -8H${H + 22}V8H${H - 22}Z`, // the collar the handle goes through
   `M${H - 22} 8L${H - 25} ${FACE}H${H + 25}L${H + 22} 8`, // the striking block, flaring out
   `M${H - 20} -8L${H - 8} -45H${H + 8}L${H + 20} -8`, // the tapered back of the head
-].join('');
+].join('')}"/>`;
 // The hammer turns about the end of its handle, placed so that at 0° its face lands flat on HIT.
 const LANDING = { x: ANVIL.x + HIT * DRAWING, y: ANVIL.y };
 const PIVOT = { x: LANDING.x + HANDLE * DRAWING, y: ANVIL.y - FACE * DRAWING };
@@ -79,9 +77,9 @@ export function mount(svg: SVGSVGElement) {
   const stage = add(svg, 'g', FLIP ? { transform: `translate(${2 * ANVIL.x} 0) scale(-1 1)` } : {}); // mirrored about the anvil
   const look = drawingFilter(svg);
   const drawings = add(stage, 'g', { filter: look.url, fill: COLOR, 'fill-opacity': FILL, stroke: COLOR, 'stroke-width': LINE });
-  set(drawings, { 'stroke-linejoin': 'round', 'stroke-linecap': 'round' });
-  const anvil = add(drawings, 'path', { d: ANVIL_PATH });
-  const hammer = add(drawings, 'path', { d: HAMMER_PATH });
+  set(drawings, { color: COLOR, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' });
+  const anvil = shape(drawings, ANVIL_SHAPE, {}, [-215, 0, 432, 190]);
+  const hammer = shape(drawings, HAMMER_SHAPE, {}, [-280, -45, 282, 95]);
 
   const puff = add(stage, 'circle', { cx: LANDING.x, cy: LANDING.y, fill: COLOR, filter: blur(svg, 12) });
   const dust = add(stage, 'g', { fill: COLOR, filter: blur(svg, 1) });
@@ -182,6 +180,18 @@ function add<K extends keyof SVGElementTagNameMap>(parent: Element, tag: K, attr
 function set<T extends Element>(node: T, attrs: Attrs) {
   for (const [name, value] of Object.entries(attrs)) node.setAttribute(name, String(value));
   return node;
+}
+
+/**
+ * `markup` in a new group, to move with `transform`: SVG drawn in `box` ([x, y, width, height]), or an <svg> file or
+ * <image href="…"> on its own, which is fitted into `box`. Shapes take the group's fill and stroke; `currentColor` its `color`.
+ */
+function shape(parent: Element, markup: string, attrs: Attrs = {}, box = [-50, -50, 100, 100]) {
+  const group = add(parent, 'g', attrs);
+  group.innerHTML = markup;
+  const file = group.firstElementChild;
+  if (file && ['svg', 'image'].includes(file.tagName)) set(file, { x: box[0], y: box[1], width: box[2], height: box[3] });
+  return group;
 }
 
 function clamp(v: number) {

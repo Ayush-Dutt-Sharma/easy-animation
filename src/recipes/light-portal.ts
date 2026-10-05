@@ -1,4 +1,4 @@
-// Light portal: a ring of light dots draws itself round a floor, and a soft beam of light rises out of it.
+// Beam rises from a ring of dots: a ring of light dots draws itself round a floor, and a soft beam of light rises out of it.
 // Copy this file, it has no dependencies: `const render = mount(svg)`, then `render(seconds)` every frame.
 // render only sets attributes from t, so the same t always draws the same picture (scrub, loop, export).
 

@@ -1,4 +1,4 @@
-// Stair climb: slabs drop in one by one as a staircase, and the orb hops up onto each new step.
+// Orb climbs a staircase: slabs drop in one by one as a staircase, and the orb hops up onto each new step.
 // Copy this file, it has no dependencies: `const render = mount(svg)`, then `render(seconds)` every frame.
 // render only sets attributes from t, so the same t always draws the same picture (scrub, loop, export).
 
@@ -12,6 +12,7 @@ const [W, D, T] = [260, 110, 34]; // slab width, depth and thickness (a flat box
 const BALL = 28;
 const DROP = 0.35; // seconds a slab takes to drop into place
 const HOP = 0.3; // seconds the orb takes to hop up a step
+const BALL_SHAPE = '<circle r="50"/>'; // shape: what climbs, 100 across round 0 0
 
 export function mount(svg: SVGSVGElement) {
   svg.setAttribute('viewBox', `0 0 ${SIZE} ${SIZE}`);
@@ -23,7 +24,9 @@ export function mount(svg: SVGSVGElement) {
     add(slab, 'path', { d: `M${W} 0L${W + D} ${-D / 2}V${-D / 2 + T}L${W} ${T}Z`, fill: '#fff', opacity: 0.6 }); // side
     return slab;
   });
-  const ball = add(svg, 'circle', { r: BALL, fill: '#fff', filter: glow(svg) }); // added last, so it is in front
+  // Added last, so it is in front. The glow sits outside the shape's scale.
+  const lit = add(svg, 'g', { fill: '#fff', color: '#fff', filter: glow(svg) });
+  const ball = shape(lit, BALL_SHAPE);
 
   /** Where slab i sits at time t: it falls from above with a little bounce. */
   const slabAt = (i: number, t: number) => {
@@ -46,11 +49,10 @@ export function mount(svg: SVGSVGElement) {
     const hop = n === 0 ? 1 : easeInOutCubic(clamp((t - DROP - n * BEAT) / HOP));
     const from = standOn(Math.max(0, n - 1), t);
     const to = standOn(n, t);
-    set(ball, {
-      cx: from.x + (to.x - from.x) * hop,
-      cy: from.y + (to.y - from.y) * hop - 70 * Math.sin(Math.PI * hop),
-      opacity: clamp(t / DROP),
-    });
+    const x = from.x + (to.x - from.x) * hop;
+    const y = from.y + (to.y - from.y) * hop - 70 * Math.sin(Math.PI * hop);
+    set(ball, { transform: `translate(${x} ${y}) scale(${BALL / 50})` });
+    set(lit, { opacity: clamp(t / DROP) });
   };
 }
 
@@ -65,6 +67,18 @@ function add<K extends keyof SVGElementTagNameMap>(parent: Element, tag: K, attr
 function set<T extends Element>(node: T, attrs: Attrs) {
   for (const [name, value] of Object.entries(attrs)) node.setAttribute(name, String(value));
   return node;
+}
+
+/**
+ * `markup` in a new group, to move with `transform`: SVG drawn in `box` ([x, y, width, height]), or an <svg> file or
+ * <image href="…"> on its own, which is fitted into `box`. Shapes take the group's fill and stroke; `currentColor` its `color`.
+ */
+function shape(parent: Element, markup: string, attrs: Attrs = {}, box = [-50, -50, 100, 100]) {
+  const group = add(parent, 'g', attrs);
+  group.innerHTML = markup;
+  const file = group.firstElementChild;
+  if (file && ['svg', 'image'].includes(file.tagName)) set(file, { x: box[0], y: box[1], width: box[2], height: box[3] });
+  return group;
 }
 
 /** The glow: a wide blur, a tight blur and the shape itself, stacked. Returns the value for a `filter` attribute. */

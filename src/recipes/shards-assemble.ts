@@ -1,4 +1,4 @@
-// Shards assemble: nine wire squares fly in from scattered, tilted spots, lock into a grid, and light flares out.
+// Squares fly into a grid: nine wire squares fly in from scattered, tilted spots, lock into a grid, and light flares out.
 // Copy this file, it has no dependencies: `const render = mount(svg)`, then `render(seconds)` every frame.
 // render only sets attributes from t, so the same t always draws the same picture (scrub, loop, export).
 
@@ -10,6 +10,7 @@ const CELL = 110; // knob: square size
 const GAP = 12;
 const SCATTER = 420; // knob: how far apart the shards start
 const RAYS = 8;
+const SHARD_SHAPE = `<rect x="${-CELL / 2}" y="${-CELL / 2}" width="${CELL}" height="${CELL}" rx="6"/>`; // shape: each piece, CELL across round 0 0
 
 export function mount(svg: SVGSVGElement) {
   svg.setAttribute('viewBox', `0 0 ${SIZE} ${SIZE}`);
@@ -20,10 +21,10 @@ export function mount(svg: SVGSVGElement) {
     add(rays, 'path', { d: `M${CENTRE} ${CENTRE}L${tip(-0.015)}L${tip(0.015)}Z` });
   }
 
-  const grid = add(svg, 'g', { fill: 'none', stroke: '#fff', 'stroke-width': 3, filter: glow(svg, 6) });
+  const grid = add(svg, 'g', { fill: 'none', stroke: '#fff', color: '#fff', 'stroke-width': 3, filter: glow(svg, 6) });
   const pitch = CELL + GAP;
   const shards = Array.from({ length: GRID * GRID }, (_, i) => ({
-    rect: add(grid, 'rect', { x: -CELL / 2, y: -CELL / 2, width: CELL, height: CELL, rx: 6 }),
+    rect: shape(grid, SHARD_SHAPE, {}, [-CELL / 2, -CELL / 2, CELL, CELL]),
     home: {
       x: CENTRE + ((i % GRID) - (GRID - 1) / 2) * pitch,
       y: CENTRE + (Math.floor(i / GRID) - (GRID - 1) / 2) * pitch,
@@ -62,6 +63,18 @@ function add<K extends keyof SVGElementTagNameMap>(parent: Element, tag: K, attr
 function set<T extends Element>(node: T, attrs: Attrs) {
   for (const [name, value] of Object.entries(attrs)) node.setAttribute(name, String(value));
   return node;
+}
+
+/**
+ * `markup` in a new group, to move with `transform`: SVG drawn in `box` ([x, y, width, height]), or an <svg> file or
+ * <image href="…"> on its own, which is fitted into `box`. Shapes take the group's fill and stroke; `currentColor` its `color`.
+ */
+function shape(parent: Element, markup: string, attrs: Attrs = {}, box = [-50, -50, 100, 100]) {
+  const group = add(parent, 'g', attrs);
+  group.innerHTML = markup;
+  const file = group.firstElementChild;
+  if (file && ['svg', 'image'].includes(file.tagName)) set(file, { x: box[0], y: box[1], width: box[2], height: box[3] });
+  return group;
 }
 
 /** The glow: a wide blur, a tight blur and the shape itself, stacked. Returns the value for a `filter` attribute. */

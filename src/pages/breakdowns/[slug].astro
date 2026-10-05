@@ -14,29 +14,35 @@ const clock = (seconds: number) => `0:${seconds.toFixed(1).padStart(4, '0')}`;
 ---
 
 <Base title={breakdown.title} description={`How ${breakdown.title} is built, scene by scene, with code to copy.`}>
+  <a class="back" href="/#breakdowns">← All breakdowns</a>
+  <p class="eyebrow">Breakdown · {breakdown.scenes.length} scenes</p>
   <h1>{breakdown.title}</h1>
   <p class="lead">
-    A short by {breakdown.creator}, taken apart scene by scene.
-    {breakdown.url && <a href={breakdown.url}>Watch the original</a>}
+    A short by {breakdown.creator}, taken apart scene by scene. {breakdown.style}
   </p>
-  <p class="lead">{breakdown.style}</p>
+  {breakdown.url && <a class="button watch" href={breakdown.url}>Watch the original ↗</a>}
 
   <ol class="scenes">
     {
-      breakdown.scenes.map((scene) => (
+      breakdown.scenes.map((scene, i) => (
         <li>
-          <div class="at">
-            {clock(scene.at[0])} to {clock(scene.at[1])}
+          <div class="marker">
+            <span class="n">{String(i + 1).padStart(2, '0')}</span>
+            <span class="at">
+              {clock(scene.at[0])}–{clock(scene.at[1])}
+            </span>
           </div>
-          <p>{scene.what}</p>
-          {scene.recipes.length > 0 && (
-            <div class="grid">
-              {scene.recipes.map((slug) => (
-                <RecipeCard recipe={recipe(slug)} />
-              ))}
-            </div>
-          )}
-          {scene.missing && <p class="missing">No recipe yet for {scene.missing}.</p>}
+          <div class="scene">
+            <p>{scene.what}</p>
+            {scene.recipes.length > 0 && (
+              <div class="grid">
+                {scene.recipes.map((slug) => (
+                  <RecipeCard recipe={recipe(slug)} />
+                ))}
+              </div>
+            )}
+            {scene.missing && <p class="missing">No recipe yet for {scene.missing}.</p>}
+          </div>
         </li>
       ))
     }
@@ -44,10 +50,17 @@ const clock = (seconds: number) => `0:${seconds.toFixed(1).padStart(4, '0')}`;
 </Base>
 
 <style>
-  .scenes { list-style: none; padding: 0; margin-top: 40px; }
-  .scenes > li { border-top: 1px solid var(--line); padding: 28px 0; }
-  .at { font: 13px var(--mono); color: var(--muted); }
-  .scenes p { font-size: 17px; max-width: 680px; }
-  .scenes .grid { grid-template-columns: repeat(auto-fill, minmax(220px, 280px)); }
-  .missing { color: var(--muted); font-size: 14px !important; font-style: italic; }
+  .back { display: inline-block; margin: 32px 0 24px; color: var(--muted); text-decoration: none; font-size: 14px; }
+  .back:hover { color: var(--text); }
+  .watch { margin-top: 24px; }
+  .scenes { list-style: none; padding: 0; margin: 56px 0 0; }
+  .scenes > li { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 24px; padding: 32px 0; border-top: 1px solid var(--line); }
+  @media (max-width: 700px) { .scenes > li { grid-template-columns: minmax(0, 1fr); gap: 8px; } }
+  .marker { display: flex; flex-direction: column; gap: 4px; }
+  @media (max-width: 700px) { .marker { flex-direction: row; align-items: baseline; gap: 12px; } }
+  .n { font-size: 28px; font-weight: 600; line-height: 1; text-shadow: 0 0 14px rgba(255, 255, 255, 0.6); }
+  .at { font: 12px var(--mono); color: var(--faint); }
+  .scene > p { font-size: 17px; max-width: 680px; margin: 0 0 20px; }
+  .scene .grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 280px)); }
+  .scene > .missing { color: var(--muted); font-size: 14px; font-style: italic; margin: 16px 0 0; }
 </style>

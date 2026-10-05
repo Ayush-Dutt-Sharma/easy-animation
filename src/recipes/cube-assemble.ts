@@ -1,4 +1,4 @@
-// Cube assemble: glowing cubelets fly together into a scrambled 3×3 cube that untwists face-on, then turns to a corner while the orb circles it.
+// Cubelets build a cube: glowing cubelets fly together into a scrambled 3×3 cube that untwists face-on, then turns to a corner while the orb circles it.
 // Copy this file, it has no dependencies: `const render = mount(svg)`, then `render(seconds)` every frame.
 // render only sets attributes from t, so the same t always draws the same picture (scrub, loop, export).
 

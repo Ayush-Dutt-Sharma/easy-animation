@@ -8,18 +8,46 @@ interface Props {
 const { recipe } = Astro.props;
 ---
 
-<a class="card" href={`/recipes/${recipe.slug}/`}>
+<a
+  class="card"
+  href={`/recipes/${recipe.slug}/`}
+  data-tags={recipe.tags.join(' ')}
+  data-text={`${recipe.title} ${recipe.summary} ${recipe.tags.join(' ')}`.toLowerCase()}
+>
   <Preview slug={recipe.slug} title={recipe.title} />
-  <h3>{recipe.title}</h3>
-  <p>{recipe.summary}</p>
-  <div class="tags">{recipe.tags.map((tag) => <span>{tag}</span>)}</div>
+  <div class="body">
+    <h3>{recipe.title}</h3>
+    <p>{recipe.summary}</p>
+    <div class="tags">{recipe.tags.map((tag) => <span class="pill">{tag}</span>)}</div>
+  </div>
 </a>
 
 <style>
-  .card { display: block; text-decoration: none; color: inherit; }
-  .card:hover h3 { text-decoration: underline; text-underline-offset: 4px; }
-  h3 { margin: 12px 0 4px; font-size: 17px; }
-  p { margin: 0 0 8px; color: var(--muted); font-size: 14px; line-height: 1.5; }
-  .tags { display: flex; gap: 6px; flex-wrap: wrap; }
-  .tags span { font: 12px var(--mono); color: var(--muted); border: 1px solid var(--line); border-radius: 99px; padding: 1px 9px; }
+  .card {
+    display: flex;
+    flex-direction: column;
+    text-decoration: none;
+    color: inherit;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+  }
+  .card[hidden] { display: none; }
+  .card:hover { border-color: var(--line-strong); box-shadow: 0 0 40px rgba(255, 255, 255, 0.08); transform: translateY(-2px); }
+  .card :global(.preview svg) { border-radius: 0; border-bottom: 1px solid var(--line); }
+  .body { display: flex; flex-direction: column; flex: 1; padding: 16px 18px 18px; }
+  h3 { margin: 0 0 6px; font-size: 16px; line-height: 1.35; }
+  p {
+    margin: 0 0 14px;
+    color: var(--muted);
+    font-size: 13.5px;
+    line-height: 1.55;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: auto; }
 </style>

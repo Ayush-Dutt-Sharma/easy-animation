@@ -1,4 +1,4 @@
-// Starburst: balls shoot out of the centre on spokes, swirl, and settle into a ring, stretching while they fly.
+// Balls burst into a ring: balls shoot out of the centre on spokes, swirl, and settle into a ring, stretching while they fly.
 // Copy this file, it has no dependencies: `const render = mount(svg)`, then `render(seconds)` every frame.
 // render only sets attributes from t, so the same t always draws the same picture (scrub, loop, export).
 

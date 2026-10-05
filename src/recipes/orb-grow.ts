@@ -1,4 +1,4 @@
-// Orb grow: a dim dot brightens and swells into a glowing orb, with a little overshoot.
+// Dot swells into an orb: a dim dot brightens and swells into a glowing orb, with a little overshoot.
 // Copy this file, it has no dependencies: `const render = mount(svg)`, then `render(seconds)` every frame.
 // render only sets attributes from t, so the same t always draws the same picture (scrub, loop, export).
 
@@ -6,14 +6,19 @@ export const DURATION = 1.6; // seconds
 const SIZE = 1000; // the stage is SIZE × SIZE on a black background
 const RADIUS = 80; // knob: final size of the orb
 const COLOR = '#fff'; // knob
+const ORB_SHAPE = '<circle r="50"/>'; // shape: the orb, 100 across round 0 0
 
 export function mount(svg: SVGSVGElement) {
   svg.setAttribute('viewBox', `0 0 ${SIZE} ${SIZE}`);
-  const orb = add(svg, 'circle', { cx: SIZE / 2, fill: COLOR, filter: glow(svg) });
+  // The glow sits outside the shape's scale, so it spreads the same however big the orb is.
+  const lit = add(svg, 'g', { fill: COLOR, color: COLOR, filter: glow(svg) });
+  const orb = shape(lit, ORB_SHAPE);
 
   return (t: number) => {
     const grow = easeOutBack(clamp(t / DURATION));
-    set(orb, { cy: SIZE / 2 + 60 * (1 - grow), r: 10 + (RADIUS - 10) * grow, opacity: 0.35 + 0.65 * clamp(grow) });
+    const r = 10 + (RADIUS - 10) * grow;
+    set(orb, { transform: `translate(${SIZE / 2} ${SIZE / 2 + 60 * (1 - grow)}) scale(${r / 50})` });
+    set(lit, { opacity: 0.35 + 0.65 * clamp(grow) });
   };
 }
 
@@ -28,6 +33,18 @@ function add<K extends keyof SVGElementTagNameMap>(parent: Element, tag: K, attr
 function set<T extends Element>(node: T, attrs: Attrs) {
   for (const [name, value] of Object.entries(attrs)) node.setAttribute(name, String(value));
   return node;
+}
+
+/**
+ * `markup` in a new group, to move with `transform`: SVG drawn in `box` ([x, y, width, height]), or an <svg> file or
+ * <image href="…"> on its own, which is fitted into `box`. Shapes take the group's fill and stroke; `currentColor` its `color`.
+ */
+function shape(parent: Element, markup: string, attrs: Attrs = {}, box = [-50, -50, 100, 100]) {
+  const group = add(parent, 'g', attrs);
+  group.innerHTML = markup;
+  const file = group.firstElementChild;
+  if (file && ['svg', 'image'].includes(file.tagName)) set(file, { x: box[0], y: box[1], width: box[2], height: box[3] });
+  return group;
 }
 
 /** The glow: a wide blur, a tight blur and the shape itself, stacked. Returns the value for a `filter` attribute. */

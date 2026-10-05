@@ -1,4 +1,4 @@
-// Card cascade: the orb drops, then tilted cards with a little figure swing down into a row above it and fade one by one.
+// Cards swing down round the orb: the orb drops, then tilted cards with a little figure swing down into a row above it and fade one by one.
 // Copy this file, it has no dependencies: `const render = mount(svg)`, then `render(seconds)` every frame.
 // render only sets attributes from t, so the same t always draws the same picture (scrub, loop, export).
 
@@ -11,6 +11,15 @@ const [W, H] = [150, 215]; // card size
 const STAGGER = 0.22; // knob: seconds between one card and the next
 const SWING = 0.6; // seconds a card takes to swing into place
 const ORB = { x: 500, y: 760, r: 32 };
+const CARD_SHAPE = [ // shape: the picture on each card, about 100 across round 0 0 (the card is 150 × 215)
+  ...Array.from({ length: 18 }, (_, d) => { // a ring of dots…
+    const a = (d / 18) * 2 * Math.PI;
+    return `<circle cx="${52 * Math.cos(a)}" cy="${52 * Math.sin(a)}" r="2.5"/>`;
+  }),
+  '<circle cy="-30" r="11"/>', // …round a little walking figure
+  '<path d="M0 -14L-4 12L-14 38M-4 12L10 38M-1 -8L14 6" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>',
+].join('');
+const ORB_SHAPE = '<circle r="50"/>'; // shape: what the cards gather round, 100 across round 0 0
 
 export function mount(svg: SVGSVGElement) {
   svg.setAttribute('viewBox', `0 0 ${SIZE} ${SIZE}`);
@@ -18,21 +27,15 @@ export function mount(svg: SVGSVGElement) {
   const cards = Array.from({ length: CARDS }, () => {
     const card = add(svg, 'g', { filter: shine });
     add(card, 'rect', { x: -W / 2, y: -H / 2, width: W, height: H, rx: 8, fill: '#555', stroke: '#fff', 'stroke-opacity': 0.4 });
-    for (let d = 0; d < 18; d++) {
-      const a = (d / 18) * 2 * Math.PI;
-      add(card, 'circle', { cx: 52 * Math.cos(a), cy: 52 * Math.sin(a), r: 2.5, fill: '#fff' }); // a ring of dots
-    }
-    add(card, 'circle', { cy: -30, r: 11, fill: '#fff' }); // a little walking figure
-    add(card, 'path', {
-      d: 'M0 -14L-4 12L-14 38M-4 12L10 38M-1 -8L14 6',
-      stroke: '#fff', 'stroke-width': 10, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', fill: 'none',
-    });
+    shape(card, CARD_SHAPE, { fill: '#fff', color: '#fff' });
     return card;
   });
-  const orb = add(svg, 'circle', { cx: ORB.x, r: ORB.r, fill: '#fff', filter: glow(svg) });
+  const lit = add(svg, 'g', { fill: '#fff', color: '#fff', filter: glow(svg) }); // the glow sits outside the shape's scale
+  const orb = shape(lit, ORB_SHAPE);
 
   return (t: number) => {
-    set(orb, { cy: 200 + (ORB.y - 200) * easeInOutCubic(clamp(t / 0.6)) });
+    const drop = 200 + (ORB.y - 200) * easeInOutCubic(clamp(t / 0.6));
+    set(orb, { transform: `translate(${ORB.x} ${drop}) scale(${ORB.r / 50})` });
     cards.forEach((card, i) => {
       const start = 0.5 + i * STAGGER;
       const fall = easeOutBack(clamp((t - start) / SWING)); // from above the frame, overshooting a little
@@ -59,6 +62,18 @@ function add<K extends keyof SVGElementTagNameMap>(parent: Element, tag: K, attr
 function set<T extends Element>(node: T, attrs: Attrs) {
   for (const [name, value] of Object.entries(attrs)) node.setAttribute(name, String(value));
   return node;
+}
+
+/**
+ * `markup` in a new group, to move with `transform`: SVG drawn in `box` ([x, y, width, height]), or an <svg> file or
+ * <image href="…"> on its own, which is fitted into `box`. Shapes take the group's fill and stroke; `currentColor` its `color`.
+ */
+function shape(parent: Element, markup: string, attrs: Attrs = {}, box = [-50, -50, 100, 100]) {
+  const group = add(parent, 'g', attrs);
+  group.innerHTML = markup;
+  const file = group.firstElementChild;
+  if (file && ['svg', 'image'].includes(file.tagName)) set(file, { x: box[0], y: box[1], width: box[2], height: box[3] });
+  return group;
 }
 
 /** The glow: a wide blur, a tight blur and the shape itself, stacked. Returns the value for a `filter` attribute. */

@@ -1,4 +1,4 @@
-// Caption wipe: one short line of text wipes on from left to right with a soft edge, holds, then fades.
+// Caption wipes on: one short line of text wipes on from left to right with a soft edge, holds, then fades.
 // Copy this file, it has no dependencies: `const render = mount(svg)`, then `render(seconds)` every frame.
 // render only sets attributes from t, so the same t always draws the same picture (scrub, loop, export).
 // Load the font yourself (Poppins here); the wipe needs no measuring, so it works with any font.

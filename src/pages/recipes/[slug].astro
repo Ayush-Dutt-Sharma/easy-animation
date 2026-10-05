@@ -2,7 +2,7 @@
 import { Code } from 'astro:components';
 import Preview from '../../components/Preview.astro';
 import Base from '../../layouts/Base.astro';
-import { breakdowns, type Recipe, recipes } from '../../catalog.ts';
+import { /* breakdowns, */ type Recipe, recipes } from '../../catalog.ts'; // breakdowns are hidden for now
 
 export function getStaticPaths() {
   return recipes.map((recipe) => ({ params: { slug: recipe.slug }, props: { recipe } }));
@@ -11,7 +11,7 @@ interface Props {
   recipe: Recipe;
 }
 const { recipe } = Astro.props;
-const usedIn = breakdowns.filter((b) => b.scenes.some((scene) => scene.recipes.includes(recipe.slug)));
+// const usedIn = breakdowns.filter((b) => b.scenes.some((scene) => scene.recipes.includes(recipe.slug)));
 const usage = `import { mount, DURATION } from './${recipe.slug}';
 
 const render = mount(document.querySelector('svg'));
@@ -23,40 +23,69 @@ requestAnimationFrame(function frame(now) {
 ---
 
 <Base title={recipe.title} description={recipe.summary}>
+  <a class="back" href="/#recipes">← All recipes</a>
   <h1>{recipe.title}</h1>
   <p class="lead">{recipe.summary}</p>
+  <div class="tags">{recipe.tags.map((tag) => <span class="pill">{tag}</span>)}</div>
+
   <div class="layout">
-    <Preview slug={recipe.slug} title={recipe.title} controls />
+    <div class="stage"><Preview slug={recipe.slug} title={recipe.title} controls /></div>
     <div class="source">
-      <div class="actions">
-        <button type="button" data-copy>Copy code</button>
-        <a href={`data:text/plain;charset=utf-8,${encodeURIComponent(recipe.source)}`} download={`${recipe.slug}.ts`}>
-          Download {recipe.slug}.ts
+      <div class="bar">
+        <span class="file">{recipe.slug}.ts</span>
+        <button type="button" class="button primary" data-copy>Copy code</button>
+        <a class="button" href={`data:text/plain;charset=utf-8,${encodeURIComponent(recipe.source)}`} download={`${recipe.slug}.ts`}>
+          Download
         </a>
       </div>
       <Code code={recipe.source} lang="ts" theme="github-dark" />
     </div>
   </div>
 
-  <h2>Use it</h2>
-  <p class="lead">Add an empty <code>&lt;svg&gt;</code> to your page, then:</p>
-  <Code code={usage} lang="ts" theme="github-dark" />
-  <p class="lead">The knobs are the constants at the top of the file.</p>
+  <section class="section">
+    <div class="section-head"><h2>Use it</h2></div>
+    <p class="lead">Add an empty <code>&lt;svg&gt;</code> to your page, then run this. The knobs are the constants at the top of the file.</p>
+    <Code code={usage} lang="ts" theme="github-dark" />
+  </section>
 
   {
-    usedIn.length > 0 && (
-      <>
-        <h2>Seen in</h2>
-        <ul>
-          {usedIn.map((b) => (
-            <li>
-              <a href={`/breakdowns/${b.slug}/`}>{b.title}</a> by {b.creator}
-            </li>
+    recipe.shapes.length > 0 && (
+      <section class="section">
+        <div class="section-head"><h2>Swap the shape</h2></div>
+        <p class="lead">
+          Set these constants to any SVG and the motion stays the same: paths or a few shapes drawn in the place given,
+          or a whole <code>.svg</code> file or an <code>&lt;image href="logo.png"&gt;</code> on its own, which is fitted
+          into place for you. Shapes take the recipe's colour (in a file, use <code>currentColor</code>); images keep
+          their own.
+        </p>
+        <dl class="shapes">
+          {recipe.shapes.map(({ name, what }) => (
+            <div>
+              <dt><code>{name}</code></dt>
+              <dd>{what[0].toUpperCase() + what.slice(1)}</dd>
+            </div>
           ))}
-        </ul>
-      </>
+        </dl>
+      </section>
     )
   }
+
+  {/* Breakdowns hidden for now: put "Seen in" back to show them again.
+  {
+    usedIn.length > 0 && (
+      <section class="section">
+        <div class="section-head"><h2>Seen in</h2></div>
+        <div class="seen">
+          {usedIn.map((b) => (
+            <a href={`/breakdowns/${b.slug}/`}>
+              <strong>{b.title}</strong> <span>by {b.creator} →</span>
+            </a>
+          ))}
+        </div>
+      </section>
+    )
+  }
+  */}
 </Base>
 
 <script>
@@ -76,20 +105,32 @@ requestAnimationFrame(function frame(now) {
 </script>
 
 <style>
-  .layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 32px; margin-top: 32px; align-items: start; }
+  .back { display: inline-block; margin: 32px 0 24px; color: var(--muted); text-decoration: none; font-size: 14px; }
+  .back:hover { color: var(--text); }
+  .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 16px; }
+
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 24px; margin-top: 40px; align-items: start; }
   @media (max-width: 860px) { .layout { grid-template-columns: minmax(0, 1fr); } }
-  .actions { display: flex; gap: 16px; align-items: center; margin-bottom: 12px; }
-  .actions button {
-    font: 600 14px var(--sans);
-    color: #000;
-    background: #fff;
-    border: 0;
-    border-radius: 6px;
-    padding: 8px 16px;
-    cursor: pointer;
-    box-shadow: 0 0 18px rgba(255, 255, 255, 0.35);
-  }
-  .actions a { color: var(--muted); font-size: 14px; }
-  .source :global(pre) { max-height: 70vh; }
-  code { font-family: var(--mono); }
+  .stage,
+  .source { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+  .stage { position: sticky; top: 84px; }
+  @media (max-width: 860px) { .stage { position: static; } }
+  .stage :global(.preview svg) { border-radius: 0; }
+
+  .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 12px 12px 18px; border-bottom: 1px solid var(--line); }
+  .file { flex: 1; font: 13px var(--mono); color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bar .button { padding: 6px 16px; font-size: 13px; }
+  .source :global(pre) { max-height: 72vh; border: 0; border-radius: 0; }
+
+  .section .lead { margin-bottom: 20px; }
+  .shapes { display: grid; gap: 1px; margin: 0; background: var(--line); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+  .shapes div { display: grid; grid-template-columns: minmax(0, 220px) minmax(0, 1fr); gap: 4px 24px; padding: 14px 18px; background: var(--panel); }
+  @media (max-width: 600px) { .shapes div { grid-template-columns: minmax(0, 1fr); } }
+  .shapes dd { margin: 0; color: var(--muted); font-size: 14px; }
+  .shapes code { word-break: break-all; }
+
+  .seen { display: grid; gap: 12px; }
+  .seen a { text-decoration: none; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 20px; transition: border-color 0.15s; }
+  .seen a:hover { border-color: var(--line-strong); }
+  .seen span { color: var(--muted); font-size: 14px; }
 </style>
