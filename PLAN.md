@@ -1,4 +1,4 @@
-# Afterglow: plan
+# easy-animation: plan
 
 A site where anyone can copy the code for glowing, minimal motion graphics (the Dan Koe short style).
 We take a reference video, break it into scenes, break each scene into small reusable animations ("recipes"),
@@ -103,7 +103,7 @@ Use the same stack as showTheCode, so nothing new needs learning:
 
 ## Open questions
 
-- Domain for "Afterglow" (not checked yet; fallbacks: Glowkit, Orbit Kit). The folder and GitHub repo are `easy-animation`.
+- Domain for easy-animation (not checked yet).
 - Which Dan Koe short should be the first breakdown? (Send the video file, as with showTheCode.)
 - Should recipes also come in light-on-white, or stay black-stage only?
 

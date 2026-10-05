@@ -8,6 +8,7 @@ interface Props {
   description: string;
 }
 const { title, description } = Astro.props;
+const repo = 'https://github.com/Ayush-Dutt-Sharma/easy-animation';
 ---
 
 <!doctype html>
@@ -16,14 +17,18 @@ const { title, description } = Astro.props;
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
-    <title>{title ? `${title} · Afterglow` : 'Afterglow: copy-paste motion graphics'}</title>
+    <title>{title ? `${title} · easy-animation` : 'easy-animation: copy-paste motion graphics'}</title>
   </head>
   <body>
     <header>
-      <a class="brand" href="/">afterglow</a>
-      <nav><a href="/#recipes">Recipes</a><a href="/#breakdowns">Breakdowns</a></nav>
+      <a class="brand" href="/">easy-animation</a>
+      <nav><a href="/#recipes">Recipes</a><a href="/#breakdowns">Breakdowns</a><a class="star" href={repo}>★ Star on GitHub</a></nav>
     </header>
     <main><slot /></main>
-    <footer>Recipes are MIT licensed: copy them into anything, including paid work.</footer>
+    <footer>
+      <p>Recipes are MIT licensed: copy them into anything, including paid work.</p>
+      <p>Like it? <a href={repo}>Give it a star on GitHub</a>.</p>
+      <p class="love">Made with <span aria-label="love">♥</span></p>
+    </footer>
   </body>
 </html>

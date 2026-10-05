@@ -1,4 +1,4 @@
-# Afterglow
+# easy-animation
 
 Copy-paste code for glowing, minimal motion graphics. Each **recipe** is one small animation in one TypeScript file
 with no dependencies. A **breakdown** takes a real short apart scene by scene and links each scene to its recipes.
