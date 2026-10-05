@@ -1,0 +1,26 @@
+/* The site is the stage: black, white light, Poppins. */
+:root {
+  color-scheme: dark;
+  --bg: #000;
+  --panel: #0d0d0d;
+  --line: #2a2a2a;
+  --text: #fff;
+  --muted: rgba(255, 255, 255, 0.6);
+  --sans: 'Poppins', system-ui, sans-serif;
+  --mono: ui-monospace, 'SF Mono', Menlo, monospace;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.6 var(--sans); }
+a { color: var(--text); text-underline-offset: 3px; }
+header, main, footer { max-width: 1100px; margin: 0 auto; padding: 0 16px; }
+header { display: flex; align-items: center; justify-content: space-between; padding-block: 20px; }
+.brand { font-weight: 600; font-size: 18px; text-decoration: none; text-shadow: 0 0 12px #fff; }
+nav { display: flex; gap: 20px; }
+nav a { color: var(--muted); text-decoration: none; }
+nav a:hover { color: var(--text); }
+footer { color: var(--muted); font-size: 13px; padding-block: 48px; }
+h1 { font-size: clamp(28px, 5vw, 44px); line-height: 1.15; margin: 32px 0 12px; }
+h2 { font-size: 22px; margin: 56px 0 20px; }
+.lead { color: var(--muted); max-width: 640px; margin: 0; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 28px; }
+pre.astro-code { padding: 16px; border-radius: 12px; border: 1px solid var(--line); font: 13px/1.6 var(--mono); overflow-x: auto; }

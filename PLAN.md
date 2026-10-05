@@ -73,6 +73,9 @@ Use the same stack as showTheCode, so nothing new needs learning:
 
 ## Phases
 
+**Status (2026-10-03):** 0–3 started together from the first reference short: 15 recipes, gallery, recipe pages
+(preview, scrubber, copy, download) and the *Why you're always bored* breakdown. Not yet: Vercel link, export downloads.
+
 0. **Setup:** Astro project, theme (black stage, white glow, Poppins captions), Vercel link.
 1. **First 6 recipes,** lifted from showTheCode's engine into standalone files:
    - glowing orb entrance
@@ -100,7 +103,7 @@ Use the same stack as showTheCode, so nothing new needs learning:
 
 ## Open questions
 
-- Domain for "Afterglow" (not checked yet; fallbacks: Glowkit, Orbit Kit). The folder is still `motionRecipes`.
+- Domain for "Afterglow" (not checked yet; fallbacks: Glowkit, Orbit Kit). The folder and GitHub repo are `easy-animation`.
 - Which Dan Koe short should be the first breakdown? (Send the video file, as with showTheCode.)
 - Should recipes also come in light-on-white, or stay black-stage only?
 

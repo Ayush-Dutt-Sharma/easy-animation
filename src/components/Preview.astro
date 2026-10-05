@@ -1,0 +1,43 @@
+---
+// A live, looping preview of one recipe. With `controls`, adds play/pause, a scrubber and the time.
+interface Props {
+  slug: string;
+  title: string;
+  controls?: boolean;
+}
+const { slug, title, controls = false } = Astro.props;
+---
+
+<div class="preview" data-preview data-slug={slug}>
+  <svg role="img" aria-label={`${title} animation`}></svg>
+  {
+    controls && (
+      <div class="controls">
+        <button class="play" type="button" aria-label="Play or pause">▶</button>
+        <input class="seek" type="range" min="0" step="0.01" value="0" aria-label="Scrub" />
+        <span class="time" />
+      </div>
+    )
+  }
+</div>
+
+<script>
+  import { preview } from '../preview.ts';
+  document.querySelectorAll<HTMLElement>('[data-preview]').forEach(preview);
+</script>
+
+<style>
+  .preview svg { display: block; width: 100%; aspect-ratio: 1; background: #000; border-radius: 12px; }
+  .controls { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+  .play {
+    font: 600 14px var(--sans);
+    color: var(--text);
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 6px 14px;
+    cursor: pointer;
+  }
+  .seek { flex: 1; accent-color: #fff; }
+  .time { color: var(--muted); font: 13px var(--mono); font-variant-numeric: tabular-nums; min-width: 9em; text-align: right; }
+</style>

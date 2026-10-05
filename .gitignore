@@ -1,0 +1,10 @@
+node_modules
+dist
+.astro
+out
+.vercel
+.env*
+.claude
+.DS_Store
+# reference videos stay local: we never host their footage
+reference

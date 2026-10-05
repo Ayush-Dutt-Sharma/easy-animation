@@ -1,0 +1,53 @@
+---
+import RecipeCard from '../../components/RecipeCard.astro';
+import Base from '../../layouts/Base.astro';
+import { type Breakdown, breakdowns, recipe } from '../../catalog.ts';
+
+export function getStaticPaths() {
+  return breakdowns.map((breakdown) => ({ params: { slug: breakdown.slug }, props: { breakdown } }));
+}
+interface Props {
+  breakdown: Breakdown;
+}
+const { breakdown } = Astro.props;
+const clock = (seconds: number) => `0:${seconds.toFixed(1).padStart(4, '0')}`;
+---
+
+<Base title={breakdown.title} description={`How ${breakdown.title} is built, scene by scene, with code to copy.`}>
+  <h1>{breakdown.title}</h1>
+  <p class="lead">
+    A short by {breakdown.creator}, taken apart scene by scene.
+    {breakdown.url && <a href={breakdown.url}>Watch the original</a>}
+  </p>
+  <p class="lead">{breakdown.style}</p>
+
+  <ol class="scenes">
+    {
+      breakdown.scenes.map((scene) => (
+        <li>
+          <div class="at">
+            {clock(scene.at[0])} to {clock(scene.at[1])}
+          </div>
+          <p>{scene.what}</p>
+          {scene.recipes.length > 0 && (
+            <div class="grid">
+              {scene.recipes.map((slug) => (
+                <RecipeCard recipe={recipe(slug)} />
+              ))}
+            </div>
+          )}
+          {scene.missing && <p class="missing">No recipe yet for {scene.missing}.</p>}
+        </li>
+      ))
+    }
+  </ol>
+</Base>
+
+<style>
+  .scenes { list-style: none; padding: 0; margin-top: 40px; }
+  .scenes > li { border-top: 1px solid var(--line); padding: 28px 0; }
+  .at { font: 13px var(--mono); color: var(--muted); }
+  .scenes p { font-size: 17px; max-width: 680px; }
+  .scenes .grid { grid-template-columns: repeat(auto-fill, minmax(220px, 280px)); }
+  .missing { color: var(--muted); font-size: 14px !important; font-style: italic; }
+</style>

@@ -1,0 +1,25 @@
+---
+import type { Recipe } from '../catalog.ts';
+import Preview from './Preview.astro';
+
+interface Props {
+  recipe: Recipe;
+}
+const { recipe } = Astro.props;
+---
+
+<a class="card" href={`/recipes/${recipe.slug}/`}>
+  <Preview slug={recipe.slug} title={recipe.title} />
+  <h3>{recipe.title}</h3>
+  <p>{recipe.summary}</p>
+  <div class="tags">{recipe.tags.map((tag) => <span>{tag}</span>)}</div>
+</a>
+
+<style>
+  .card { display: block; text-decoration: none; color: inherit; }
+  .card:hover h3 { text-decoration: underline; text-underline-offset: 4px; }
+  h3 { margin: 12px 0 4px; font-size: 17px; }
+  p { margin: 0 0 8px; color: var(--muted); font-size: 14px; line-height: 1.5; }
+  .tags { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tags span { font: 12px var(--mono); color: var(--muted); border: 1px solid var(--line); border-radius: 99px; padding: 1px 9px; }
+</style>

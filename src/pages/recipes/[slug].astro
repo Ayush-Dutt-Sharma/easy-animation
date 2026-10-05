@@ -1,0 +1,95 @@
+---
+import { Code } from 'astro:components';
+import Preview from '../../components/Preview.astro';
+import Base from '../../layouts/Base.astro';
+import { breakdowns, type Recipe, recipes } from '../../catalog.ts';
+
+export function getStaticPaths() {
+  return recipes.map((recipe) => ({ params: { slug: recipe.slug }, props: { recipe } }));
+}
+interface Props {
+  recipe: Recipe;
+}
+const { recipe } = Astro.props;
+const usedIn = breakdowns.filter((b) => b.scenes.some((scene) => scene.recipes.includes(recipe.slug)));
+const usage = `import { mount, DURATION } from './${recipe.slug}';
+
+const render = mount(document.querySelector('svg'));
+const start = performance.now();
+requestAnimationFrame(function frame(now) {
+  render(((now - start) / 1000) % DURATION); // or any time you like: scrub, slow down, export
+  requestAnimationFrame(frame);
+});`;
+---
+
+<Base title={recipe.title} description={recipe.summary}>
+  <h1>{recipe.title}</h1>
+  <p class="lead">{recipe.summary}</p>
+  <div class="layout">
+    <Preview slug={recipe.slug} title={recipe.title} controls />
+    <div class="source">
+      <div class="actions">
+        <button type="button" data-copy>Copy code</button>
+        <a href={`data:text/plain;charset=utf-8,${encodeURIComponent(recipe.source)}`} download={`${recipe.slug}.ts`}>
+          Download {recipe.slug}.ts
+        </a>
+      </div>
+      <Code code={recipe.source} lang="ts" theme="github-dark" />
+    </div>
+  </div>
+
+  <h2>Use it</h2>
+  <p class="lead">Add an empty <code>&lt;svg&gt;</code> to your page, then:</p>
+  <Code code={usage} lang="ts" theme="github-dark" />
+  <p class="lead">The knobs are the constants at the top of the file.</p>
+
+  {
+    usedIn.length > 0 && (
+      <>
+        <h2>Seen in</h2>
+        <ul>
+          {usedIn.map((b) => (
+            <li>
+              <a href={`/breakdowns/${b.slug}/`}>{b.title}</a> by {b.creator}
+            </li>
+          ))}
+        </ul>
+      </>
+    )
+  }
+</Base>
+
+<script>
+  const button = document.querySelector<HTMLButtonElement>('[data-copy]');
+  const code = document.querySelector('.source pre') as HTMLPreElement; // the page always renders it
+  button?.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(code.textContent ?? '');
+      button.textContent = 'Copied ✓';
+    } catch {
+      // Clipboard blocked (some embedded browsers): select the code so the visitor can copy it themselves.
+      getSelection()?.selectAllChildren(code);
+      button.textContent = 'Selected: press ⌘C / Ctrl+C';
+    }
+    setTimeout(() => (button.textContent = 'Copy code'), 1600);
+  });
+</script>
+
+<style>
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 32px; margin-top: 32px; align-items: start; }
+  @media (max-width: 860px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+  .actions { display: flex; gap: 16px; align-items: center; margin-bottom: 12px; }
+  .actions button {
+    font: 600 14px var(--sans);
+    color: #000;
+    background: #fff;
+    border: 0;
+    border-radius: 6px;
+    padding: 8px 16px;
+    cursor: pointer;
+    box-shadow: 0 0 18px rgba(255, 255, 255, 0.35);
+  }
+  .actions a { color: var(--muted); font-size: 14px; }
+  .source :global(pre) { max-height: 70vh; }
+  code { font-family: var(--mono); }
+</style>

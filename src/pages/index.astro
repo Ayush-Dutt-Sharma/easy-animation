@@ -1,0 +1,32 @@
+---
+import RecipeCard from '../components/RecipeCard.astro';
+import Base from '../layouts/Base.astro';
+import { breakdowns, recipes } from '../catalog.ts';
+---
+
+<Base description="Copy-paste code for glowing, minimal motion graphics, each one taken from a real short.">
+  <h1>Glowing motion graphics.<br />Copy the code.</h1>
+  <p class="lead">
+    Each recipe is one small animation in one TypeScript file with no dependencies. Every frame is worked out from the
+    time alone, so you can loop it, scrub it or render it to video. Breakdowns show how the recipes make a real short.
+  </p>
+
+  <h2 id="recipes">Recipes</h2>
+  <div class="grid">{recipes.map((recipe) => <RecipeCard recipe={recipe} />)}</div>
+
+  <h2 id="breakdowns">Breakdowns</h2>
+  <ul class="breakdowns">
+    {
+      breakdowns.map((b) => (
+        <li>
+          <a href={`/breakdowns/${b.slug}/`}>{b.title}</a> <span>by {b.creator} · {b.scenes.length} scenes</span>
+        </li>
+      ))
+    }
+  </ul>
+</Base>
+
+<style>
+  .breakdowns { padding: 0; list-style: none; font-size: 17px; }
+  .breakdowns span { color: var(--muted); font-size: 14px; }
+</style>
